@@ -1,23 +1,654 @@
-(English below)
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Head Tilt IT Vocab Game - 25 Tech Terms Challenge</title>
+  <!-- MediaPipe Face Mesh & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
-HƯỚNG DẪN TẢI VÀ CÀI ĐẶT:
-- Tải tất cả các part về máy tính
-- Máy tính có cài phần mềm giải nén. Ví dụ: Winrar hoặc 7zip
-- Để tất cả các part vừa  tải về cùng 1 thư mục
-- Bấm chuột phải nên Part1 và chọn Extract Here
-- Sau khi giải nén xong part1 thì phần mềm sẽ đòi part2. Bạn dẫn nó đến chỗ để part 2. Cứ như vậy  cho đến part cuối cùng
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      background: #020617;
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
 
-- Giải nén xong thì cài đặt phần mềm như bình thường. 
-Việc chia nhỏ các part vậy để khách hàng tải về dễ dàng và ko bị lỗi trong quá trình  tải.
+    /* THANH TRÊN CÙNG */
+    .top-bar {
+      height: 75px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      background: #0f172a;
+      border-bottom: 3px solid #0284c7;
+      z-index: 10;
+    }
+    .badge {
+      font-size: 24px;
+      font-weight: bold;
+      color: #38bdf8;
+      background: #1e293b;
+      padding: 6px 16px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .timer-badge {
+      font-size: 28px;
+      font-weight: bold;
+      color: #facc15;
+      background: #422006;
+      border: 2px solid #ca8a04;
+      padding: 6px 20px;
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+    .btn-invert {
+      font-family: "Times New Roman", Times, serif;
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #64748b;
+      padding: 6px 14px;
+      font-size: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-invert:hover {
+      background: #475569;
+    }
 
+    /* TIẾN ĐỘ 25 CÂU */
+    .progress-strip {
+      height: 6px;
+      background: #1e293b;
+      width: 100%;
+    }
+    .progress-fill-main {
+      height: 100%;
+      background: #38bdf8;
+      width: 4%;
+      transition: width 0.3s ease;
+    }
 
---------------
-DOWNLOAD AND INSTALL INSTRUCTIONS:
-- Download all parts to your computer
-- Computer with decompression software installed. For example: Winrar or 7zip
-- Put all downloaded parts in the same folder
-- Right click on Part1 and select Extract Here
-- After decompressing part1, the software will ask for part2. You lead it to part 2. And so on until the last part
+    /* BANNER CÂU HỎI */
+    .question-banner {
+      background: #1e293b;
+      text-align: center;
+      padding: 12px 25px;
+      border-bottom: 2px solid #334155;
+      z-index: 10;
+    }
+    .q-vietnamese {
+      font-size: 32px;
+      font-weight: bold;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+    .q-english {
+      font-size: 22px;
+      color: #cbd5e1;
+      font-style: italic;
+    }
 
-- After extracting, install the software as usual.
-The division of parts so that customers can download easily and without errors during the download process.
+    /* KHU VỰC THI ĐẤU */
+    .arena {
+      flex: 1;
+      display: flex;
+      position: relative;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 35px;
+    }
+
+    /* Ô CHỌN TỪ VỰNG TRÁI / PHẢI */
+    .choice-box {
+      width: 29%;
+      height: 75%;
+      background: rgba(15, 23, 42, 0.95);
+      border: 4px solid #334155;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .choice-label {
+      position: absolute;
+      top: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #475569;
+    }
+    .choice-text {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1.3;
+      padding: 0 10px;
+    }
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 16px;
+      width: 0%;
+      background: #38bdf8;
+      transition: width 0.05s linear;
+    }
+
+    /* TRẠNG THÁI ACTIVE */
+    .choice-box.tilting {
+      border-color: #38bdf8;
+      transform: scale(1.05);
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.6);
+    }
+    .choice-box.correct {
+      border-color: #22c55e !important;
+      background: rgba(20, 83, 45, 0.95) !important;
+    }
+    .choice-box.wrong {
+      border-color: #ef4444 !important;
+      background: rgba(127, 29, 29, 0.95) !important;
+    }
+
+    /* KHUNG WEBCAM */
+    .camera-container {
+      width: 37%;
+      height: 82%;
+      background: #000;
+      border: 4px solid #0284c7;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 30px rgba(2, 132, 199, 0.4);
+    }
+    video#webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .tilt-status {
+      position: absolute;
+      bottom: 15px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #38bdf8;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #38bdf8;
+      z-index: 5;
+    }
+    .face-guide {
+      position: absolute;
+      width: 140px;
+      height: 180px;
+      border: 2px dashed rgba(56, 189, 248, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* OVERLAY KHỞI ĐỘNG */
+    #start-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.96);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+    }
+    .btn-action {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 30px;
+      font-weight: bold;
+      padding: 14px 40px;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-top: 25px;
+      box-shadow: 0 0 25px rgba(2, 132, 199, 0.5);
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: #0369a1;
+      transform: scale(1.05);
+    }
+
+    /* MÀN HÌNH KẾT THÚC (GAME OVER) */
+    #end-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.98);
+      z-index: 100;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+    }
+    .summary-card {
+      background: #0f172a;
+      border: 3px solid #38bdf8;
+      border-radius: 20px;
+      padding: 30px 50px;
+      max-width: 650px;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.3);
+    }
+    .result-stat {
+      font-size: 26px;
+      margin: 12px 0;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MÀN HÌNH BẮT ĐẦU -->
+  <div id="start-overlay">
+    <h1 style="font-size: 46px; color: #38bdf8; margin-bottom: 20px;">HEAD TILT VOCAB ARENA</h1>
+    <p style="font-size: 26px; max-width: 800px; line-height: 1.6; color: #cbd5e1;">
+      🎯 <b>Thử thách 25 từ vựng Công nghệ Thông tin:</b><br>
+      ⏱ Mỗi từ có <b>10 giây</b> để đọc hiểu và chọn đáp án.<br>
+      👉 Nghiêng đầu về bên từ đúng và giữ 1.2s để chốt kết quả.<br>
+      🏁 Hoàn thành đủ 25 từ để nhận cúp vinh danh và xếp hạng!
+    </p>
+    <button class="btn-action" onclick="initGame()">BẬT CAMERA & BẮT ĐẦU 🚀</button>
+  </div>
+
+  <!-- MÀN HÌNH KẾT THÚC GAME -->
+  <div id="end-overlay">
+    <div class="summary-card">
+      <h1 style="font-size: 44px; color: #facc15; margin-bottom: 10px;">🏆 HOÀN THÀNH BÀI ÔN TẬP!</h1>
+      <p style="font-size: 24px; color: #94a3b8; margin-bottom: 25px;">Đã hoàn thành toàn bộ 25 thuật ngữ CNTT</p>
+      
+      <div class="result-stat">⭐ Tổng điểm: <b id="final-score" style="color: #38bdf8;">0</b></div>
+      <div class="result-stat">🎯 Trả lời đúng: <b id="final-correct" style="color: #22c55e;">0 / 25</b></div>
+      <div class="result-stat">🔥 Chuỗi đúng dài nhất: <b id="final-max-streak" style="color: #fb923c;">0</b></div>
+      <div class="result-stat" id="final-rank" style="font-size: 28px; font-weight: bold; margin-top: 15px; color: #a855f7;">
+        Hạng: IT Specialist
+      </div>
+
+      <button class="btn-action" onclick="restartGame()">CHƠI LẠI TỪ ĐẦU 🔄</button>
+    </div>
+  </div>
+
+  <!-- THANH TRÊN CÙNG -->
+  <div class="top-bar">
+    <div class="badge" id="q-counter">Câu: 1 / 25</div>
+    <div class="badge" id="score-display">Điểm: 0</div>
+    <div class="timer-badge" id="timer-display">⏱ 10s</div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+      <button class="btn-invert" onclick="toggleInvert()" title="Đổi hướng nếu webcam bị lật ngược">🔄 Đổi chiều nghiêng</button>
+      <div class="badge" id="streak-display">Chuỗi: 0 🔥</div>
+    </div>
+  </div>
+
+  <div class="progress-strip">
+    <div class="progress-fill-main" id="progress-bar-main"></div>
+  </div>
+
+  <!-- NỘI DUNG ĐỊNH NGHĨA -->
+  <div class="question-banner">
+    <div class="q-vietnamese" id="q-meaning">Đang tải câu hỏi...</div>
+    <div class="q-english" id="q-def">...</div>
+  </div>
+
+  <!-- KHU VỰC THI ĐẤU -->
+  <div class="arena">
+    <!-- HỘP TRÁI -->
+    <div class="choice-box" id="box-left">
+      <div class="choice-label">⬅ NGHIÊNG TRÁI</div>
+      <div class="choice-text" id="text-left">...</div>
+      <div class="progress-bar" id="prog-left"></div>
+    </div>
+
+    <!-- KHUNG CAMERA CHÍNH GIỮA -->
+    <div class="camera-container">
+      <video id="webcam" autoplay playsinline></video>
+      <div class="face-guide"></div>
+      <div class="tilt-status" id="tilt-label">GIỮ ĐẦU THẲNG</div>
+    </div>
+
+    <!-- HỘP PHẢI -->
+    <div class="choice-box" id="box-right">
+      <div class="choice-label">NGHIÊNG PHẢI ➡</div>
+      <div class="choice-text" id="text-right">...</div>
+      <div class="progress-bar" id="prog-right"></div>
+    </div>
+  </div>
+
+  <script>
+    // 25 TỪ VỰNG CNTT CHUẨN GIÁO TRÌNH
+    const originalVocabList = [
+      { word: "Science", meaning: "Khoa học", def: "A systematic enterprise building knowledge through testable explanations" },
+      { word: "Interchangeably", meaning: "Có thể thay thế cho nhau", def: "In a way that can be exchanged or substituted" },
+      { word: "Order", meaning: "Trật tự / Thứ tự", def: "The arrangement or sequence of things in relation to each other" },
+      { word: "Retrieve", meaning: "Lấy, gọi ra", def: "To get or bring information back from computer memory" },
+      { word: "Control unit", meaning: "Đơn vị điều khiển", def: "Examines instructions and directs operations inside the CPU" },
+      { word: "Arithmetic-logical unit", meaning: "Đơn vị số học - logic", def: "Performs mathematical calculations (+, -) and logical tests" },
+      { word: "State", meaning: "Trạng thái", def: "The particular condition of a circuit switch (ON or OFF)" },
+      { word: "Transmit", meaning: "Truyền", def: "To broadcast or pass electrical signals from one place to another" },
+      { word: "Signal", meaning: "Tín hiệu", def: "An electrical impulse transmitted through a circuit" },
+      { word: "Command", meaning: "Mệnh lệnh", def: "An instruction given to a computer program or system" },
+      { word: "Interpret", meaning: "Dịch / Diễn giải", def: "To translate or explain the meaning of program instructions" },
+      { word: "Load", meaning: "Tải", def: "To transfer data from storage into main memory" },
+      { word: "Console", meaning: "Thiết bị đầu cuối", def: "A panel or screen containing controls to operate equipment" },
+      { word: "Manual", meaning: "Bằng tay / Thủ công", def: "Done with the hands rather than automatically" },
+      { word: "Automatic", meaning: "Tự động", def: "Working by itself without human intervention" },
+      { word: "Connected", meaning: "Kết nối", def: "Joined together by electronic switches or cables" },
+      { word: "Current", meaning: "Dòng điện", def: "A flow of electricity through a wire or circuit" },
+      { word: "Binary digit", meaning: "Số nhị phân (Bit)", def: "The smallest unit of data in computing: either 0 or 1" },
+      { word: "Grouped", meaning: "Nhóm / Gom cụm", def: "Gathered together (e.g. 8 bits grouped into 1 byte)" },
+      { word: "Arrangement", meaning: "Sắp xếp / Bố trí", def: "A specific layout or pattern of bits" },
+      { word: "Representation", meaning: "Biểu diễn / Hiển thị lại", def: "The way information is coded in digital form" },
+      { word: "Reserved", meaning: "Cất giữ / Dành riêng", def: "Kept specially for a particular purpose (first 32 ASCII codes)" },
+      { word: "Codes", meaning: "Mã", def: "A standard system of characters and symbols" },
+      { word: "RAM memory", meaning: "Bộ nhớ RAM", def: "Temporary random-access memory where running programs are stored" },
+      { word: "Document", meaning: "Tài liệu", def: "A file created by an application" }
+    ];
+
+    let gameQuestions = [];
+    let currentIdx = 0;
+    let currentQ = null;
+    let correctSide = null;
+    let score = 0;
+    let correctCount = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let isProcessingAnswer = false;
+
+    let invertDirection = true;
+    let timeLeft = 10;
+    let timerInterval = null;
+
+    let tiltHoldTime = 0;
+    const HOLD_REQUIRED = 1200;
+    let cameraInstance = null;
+
+    function toggleInvert() {
+      invertDirection = !invertDirection;
+      alert(invertDirection ? "Đã chuyển: Chế độ mặc định" : "Đã chuyển: Chế độ đảo chiều");
+    }
+
+    async function initGame() {
+      document.getElementById('start-overlay').style.display = 'none';
+      const videoElement = document.getElementById('webcam');
+
+      const faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+      });
+
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      faceMesh.onResults(onFaceResults);
+
+      cameraInstance = new Camera(videoElement, {
+        onFrame: async () => {
+          await faceMesh.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480
+      });
+
+      cameraInstance.start();
+      setupKeyboardFallback();
+      restartGame();
+    }
+
+    function restartGame() {
+      document.getElementById('end-overlay').style.display = 'none';
+      score = 0;
+      correctCount = 0;
+      streak = 0;
+      maxStreak = 0;
+      currentIdx = 0;
+      
+      // Xáo trộn ngẫu nhiên thứ tự 25 câu để mỗi lần chơi là 1 trải nghiệm mới
+      gameQuestions = [...originalVocabList].sort(() => Math.random() - 0.5);
+
+      document.getElementById('score-display').innerText = `Điểm: 0`;
+      document.getElementById('streak-display').innerText = `Chuỗi: 0 🔥`;
+
+      loadQuestionByIndex(0);
+    }
+
+    // NHẬN DIỆN VÀ TÍNH HƯỚNG NGHIÊNG
+    function onFaceResults(results) {
+      if (isProcessingAnswer || currentIdx >= gameQuestions.length) return;
+
+      if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+        document.getElementById('tilt-label').innerText = "VUI LÒNG ĐỨNG TRƯỚC CAMERA";
+        document.getElementById('tilt-label').style.color = "#f87171";
+        updateTilt('center');
+        return;
+      }
+
+      const landmarks = results.multiFaceLandmarks[0];
+      const leftEye = landmarks[33];
+      const rightEye = landmarks[263];
+
+      const dy = rightEye.y - leftEye.y;
+      const dx = rightEye.x - leftEye.x;
+      let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+      if (invertDirection) {
+        angle = -angle;
+      }
+
+      if (angle > 11) {
+        updateTilt('right');
+      } else if (angle < -11) {
+        updateTilt('left');
+      } else {
+        updateTilt('center');
+      }
+    }
+
+    let lastTimestamp = performance.now();
+    function updateTilt(side) {
+      const now = performance.now();
+      const delta = now - lastTimestamp;
+      lastTimestamp = now;
+
+      const tiltLabel = document.getElementById('tilt-label');
+      const boxL = document.getElementById('box-left');
+      const boxR = document.getElementById('box-right');
+      const progL = document.getElementById('prog-left');
+      const progR = document.getElementById('prog-right');
+
+      if (side === 'left') {
+        tiltLabel.innerText = "⬅ ĐANG CHỌN TRÁI";
+        tiltLabel.style.color = "#38bdf8";
+        boxL.classList.add('tilting');
+        boxR.classList.remove('tilting');
+        
+        tiltHoldTime += delta;
+        progL.style.width = Math.min((tiltHoldTime / HOLD_REQUIRED) * 100, 100) + "%";
+        progR.style.width = "0%";
+
+        if (tiltHoldTime >= HOLD_REQUIRED) {
+          triggerChoice('left');
+        }
+      } else if (side === 'right') {
+        tiltLabel.innerText = "ĐANG CHỌN PHẢI ➡";
+        tiltLabel.style.color = "#38bdf8";
+        boxR.classList.add('tilting');
+        boxL.classList.remove('tilting');
+
+        tiltHoldTime += delta;
+        progR.style.width = Math.min((tiltHoldTime / HOLD_REQUIRED) * 100, 100) + "%";
+        progL.style.width = "0%";
+
+        if (tiltHoldTime >= HOLD_REQUIRED) {
+          triggerChoice('right');
+        }
+      } else {
+        tiltLabel.innerText = "GIỮ ĐẦU THẲNG";
+        tiltLabel.style.color = "#94a3b8";
+        boxL.classList.remove('tilting');
+        boxR.classList.remove('tilting');
+        progL.style.width = "0%";
+        progR.style.width = "0%";
+        tiltHoldTime = 0;
+      }
+    }
+
+    // TẢI CÂU HỎI THEO THỨ TỰ 0 -> 24
+    function loadQuestionByIndex(index) {
+      if (index >= gameQuestions.length) {
+        endGame();
+        return;
+      }
+
+      isProcessingAnswer = false;
+      tiltHoldTime = 0;
+      updateTilt('center');
+
+      document.getElementById('q-counter').innerText = `Câu: ${index + 1} / 25`;
+      document.getElementById('progress-bar-main').style.width = `${((index + 1) / 25) * 100}%`;
+
+      const boxL = document.getElementById('box-left');
+      const boxR = document.getElementById('box-right');
+      boxL.className = 'choice-box';
+      boxR.className = 'choice-box';
+
+      currentQ = gameQuestions[index];
+      
+      // Lấy 1 từ ngẫu nhiên trong danh sách để làm từ sai
+      let wrongWord = originalVocabList[Math.floor(Math.random() * originalVocabList.length)].word;
+      while (wrongWord === currentQ.word) {
+        wrongWord = originalVocabList[Math.floor(Math.random() * originalVocabList.length)].word;
+      }
+
+      correctSide = Math.random() < 0.5 ? 'left' : 'right';
+
+      document.getElementById('q-meaning').innerText = currentQ.meaning;
+      document.getElementById('q-def').innerText = currentQ.def;
+
+      if (correctSide === 'left') {
+        document.getElementById('text-left').innerText = currentQ.word;
+        document.getElementById('text-right').innerText = wrongWord;
+      } else {
+        document.getElementById('text-left').innerText = wrongWord;
+        document.getElementById('text-right').innerText = currentQ.word;
+      }
+
+      // ĐẾM NGƯỢC 10S
+      clearInterval(timerInterval);
+      timeLeft = 10;
+      const timerDisplay = document.getElementById('timer-display');
+      timerDisplay.innerText = `⏱ ${timeLeft}s`;
+      timerDisplay.style.background = "#422006";
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = `⏱ ${timeLeft}s`;
+        if (timeLeft <= 3) {
+          timerDisplay.style.background = "#7f1d1d";
+        }
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          triggerChoice('timeout');
+        }
+      }, 1000);
+    }
+
+    // XỬ LÝ KHI CHỌN XONG 1 CÂU
+    function triggerChoice(chosenSide) {
+      if (isProcessingAnswer) return;
+      isProcessingAnswer = true;
+      clearInterval(timerInterval);
+
+      const chosenBox = document.getElementById(chosenSide === 'left' ? 'box-left' : (chosenSide === 'right' ? 'box-right' : null));
+      const correctBox = document.getElementById(correctSide === 'left' ? 'box-left' : 'box-right');
+
+      if (chosenSide === correctSide) {
+        score += 100;
+        correctCount += 1;
+        streak += 1;
+        if (streak > maxStreak) maxStreak = streak;
+        chosenBox.classList.add('correct');
+        document.getElementById('tilt-label').innerText = "CHÍNH XÁC! +100 ĐIỂM 🎉";
+        document.getElementById('tilt-label').style.color = "#22c55e";
+      } else {
+        streak = 0;
+        if (chosenBox) chosenBox.classList.add('wrong');
+        correctBox.classList.add('correct');
+        document.getElementById('tilt-label').innerText = chosenSide === 'timeout' ? "HẾT GIỜ! ❌" : "SAI RỒI! ❌";
+        document.getElementById('tilt-label').style.color = "#ef4444";
+      }
+
+      document.getElementById('score-display').innerText = `Điểm: ${score}`;
+      document.getElementById('streak-display').innerText = `Chuỗi: ${streak} 🔥`;
+
+      // Sau 2 giây chuyển sang câu tiếp theo
+      setTimeout(() => {
+        currentIdx++;
+        loadQuestionByIndex(currentIdx);
+      }, 2000);
+    }
+
+    // KẾT THÚC GAME VÀ TRAO GIẢI
+    function endGame() {
+      clearInterval(timerInterval);
+      document.getElementById('end-overlay').style.display = 'flex';
+      
+      document.getElementById('final-score').innerText = `${score} PTS`;
+      document.getElementById('final-correct').innerText = `${correctCount} / 25 từ`;
+      document.getElementById('final-max-streak').innerText = `${maxStreak} câu liên tiếp`;
+
+      let rankTitle = "IT Beginner 💻";
+      if (correctCount >= 23) rankTitle = "👑 IT GRANDMASTER (Xuất Sắc)";
+      else if (correctCount >= 18) rankTitle = "⚡ SENIOR DEVELOPER (Giỏi)";
+      else if (correctCount >= 12) rankTitle = "🎯 JUNIOR TECHNICIAN (Khá)";
+
+      document.getElementById('final-rank').innerText = rankTitle;
+    }
+
+    // DỰ PHÒNG PHÍM MŨI TÊN
+    function setupKeyboardFallback() {
+      window.addEventListener('keydown', (e) => {
+        if (isProcessingAnswer || currentIdx >= gameQuestions.length) return;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          triggerChoice('left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          triggerChoice('right');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
