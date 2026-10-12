@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>AI Hand Fruit Ninja - Healthy Living Vocab</title>
-  <!-- Bộ thư viện MediaPipe Hands chuẩn ổn định -->
+  <title>AI Motion Fruit Ninja - 25 Healthy Living Vocab</title>
+  <!-- MediaPipe Hands & Camera Utils với độ chính xác cao -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 
@@ -19,7 +19,7 @@
       user-select: none;
     }
 
-    /* KHUNG WEBCAM NỀN MỜ LẬT GƯƠNG */
+    /* WEBCAM NỀN MỜ LẬT GƯƠNG */
     #webcam-bg {
       position: absolute;
       top: 0;
@@ -28,12 +28,12 @@
       height: 100vh;
       object-fit: cover;
       transform: scaleX(-1);
-      opacity: 0.35;
+      opacity: 0.38;
       z-index: 1;
-      filter: contrast(1.1) brightness(0.8);
+      filter: contrast(1.15) brightness(0.85);
     }
 
-    /* CANVAS ĐỒ HỌA GAME & HIỆU ỨNG KIẾM */
+    /* CANVAS GAME CHÍNH */
     #game-canvas {
       position: absolute;
       top: 0;
@@ -43,7 +43,7 @@
       z-index: 2;
     }
 
-    /* THANH THÔNG TIN TRÊN CÙNG */
+    /* THANH HUD TRÊN CÙNG */
     .hud-bar {
       position: absolute;
       top: 0;
@@ -53,7 +53,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 40px;
+      padding: 0 45px;
       background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0) 100%);
       z-index: 10;
     }
@@ -61,48 +61,51 @@
       font-size: 26px;
       font-weight: bold;
       color: #38bdf8;
-      background: rgba(30, 41, 59, 0.85);
+      background: rgba(30, 41, 59, 0.9);
       border: 2px solid #0284c7;
       padding: 8px 22px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.35);
     }
     .timer-badge {
       font-size: 32px;
       font-weight: bold;
       color: #facc15;
-      background: rgba(66, 32, 6, 0.9);
+      background: rgba(66, 32, 6, 0.95);
       border: 3px solid #ca8a04;
-      padding: 8px 28px;
-      border-radius: 14px;
-      box-shadow: 0 0 20px rgba(202, 138, 4, 0.4);
+      padding: 8px 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(202, 138, 4, 0.5);
+      transition: all 0.3s;
     }
 
-    /* BẢNG NHIỆM VỤ TỪ VỰNG CẦN CHÉM */
+    /* BẢNG NHIỆM VỤ NGHĨA TIẾNG VIỆT */
     .mission-card {
       position: absolute;
       top: 95px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92);
+      background: rgba(15, 23, 42, 0.94);
       border: 3px solid #38bdf8;
-      border-radius: 18px;
-      padding: 12px 35px;
+      border-radius: 20px;
+      padding: 12px 40px;
       text-align: center;
       z-index: 10;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+      max-width: 80%;
     }
     .mission-label {
-      font-size: 20px;
+      font-size: 19px;
       color: #94a3b8;
-      text-transform: uppercase;
       letter-spacing: 2px;
+      text-transform: uppercase;
     }
     .mission-vn {
-      font-size: 36px;
+      font-size: 38px;
       font-weight: bold;
       color: #facc15;
       margin: 4px 0;
+      text-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
     }
     .mission-ipa {
       font-size: 22px;
@@ -110,7 +113,7 @@
       font-style: italic;
     }
 
-    /* MÀN HÌNH BẮT ĐẦU */
+    /* MODAL KHỞI ĐỘNG & KẾT THÚC */
     #start-modal, #end-modal {
       position: absolute;
       inset: 0;
@@ -142,72 +145,72 @@
       transform: scale(1.05);
     }
 
-    /* CON TRỎ BÀN TAY NEON */
+    /* ĐIỂM CHỈ TAY NEON THEO NGÓN TRỎ */
     #hand-cursor {
       position: absolute;
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background: #38bdf8;
-      border: 3px solid #ffffff;
+      background: #ffffff;
+      border: 4px solid #38bdf8;
       box-shadow: 0 0 25px #38bdf8, 0 0 50px #0284c7;
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 50;
       display: none;
-      transition: transform 0.05s ease-out;
+      transition: width 0.1s, height 0.1s;
     }
   </style>
 </head>
 <body>
 
-  <!-- VIDEO WEBCAM NỀN -->
+  <!-- CAMERA WEBCAM PHÍA SAU -->
   <video id="webcam-bg" autoplay playsinline muted></video>
 
-  <!-- CANVAS CHÉM TRÁI CÂY -->
+  <!-- CANVAS VẼ GAME & LƯỠI KIẾM -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- ĐIỂM CHỈ TAY NEON THEO NGÓN TAY -->
+  <!-- ĐIỂM NGÓN TAY TRỎ NEON -->
   <div id="hand-cursor"></div>
 
-  <!-- HUD TRÊN CÙNG -->
+  <!-- THANH HUD -->
   <div class="hud-bar">
     <div class="hud-badge" id="hud-progress">Từ: 1 / 25</div>
     <div class="timer-badge" id="hud-timer">⏱ 15s</div>
     <div class="hud-badge" id="hud-score">Điểm: 0 ⭐</div>
   </div>
 
-  <!-- BẢNG NHIỆM VỤ NGHĨA TIẾNG VIỆT -->
+  <!-- NHIỆM VỤ TIẾNG VIỆT -->
   <div class="mission-card">
-    <div class="mission-label">🎯 HÃY CHÉM TRÁI CÂY CÓ TỪ NGHĨA LÀ:</div>
+    <div class="mission-label">🎯 HÃY VUNG TAY CHÉM TỪ CÓ NGHĨA LÀ:</div>
     <div class="mission-vn" id="target-vn">...</div>
     <div class="mission-ipa" id="target-ipa">...</div>
   </div>
 
-  <!-- MÀN HÌNH BẮT ĐẦU -->
+  <!-- POPUP BẮT ĐẦU -->
   <div id="start-modal">
-    <h1 style="font-size: 50px; color: #38bdf8; margin-bottom: 20px;">⚔️ AI MOTION FRUIT NINJA ⚔️</h1>
-    <p style="font-size: 26px; max-width: 800px; line-height: 1.6; color: #cbd5e1;">
-      🍉 <b>Luật chơi:</b><br>
-      👉 Đứng trước camera, giơ ngón tay trỏ lên để xuất hiện vệt kiếm Katana.<br>
-      ⏱ Mỗi đợt có <b>ít nhất 15 giây</b>, 5 trái cây sẽ bay chậm rãi.<br>
-      🗡 Vung tay chém đúng trái cây có từ tiếng Anh ứng với nghĩa tiếng Việt!<br>
-      <i>(Hỗ trợ cả di chuột/vuốt màn hình nếu camera chưa kịp nhận bàn tay)</i>
+    <h1 style="font-size: 52px; color: #38bdf8; margin-bottom: 20px;">⚔️ AI MOTION FRUIT NINJA ⚔️</h1>
+    <p style="font-size: 26px; max-width: 820px; line-height: 1.6; color: #cbd5e1;">
+      🍉 <b>Thử thách trọn bộ 25 từ vựng Sức Khỏe & Đời Sống:</b><br>
+      👉 Đứng trước camera, giơ ngón tay trỏ lên để kích hoạt luồng kiếm Katana.<br>
+      ⏱ Mỗi từ có <b>15 giây</b>, 5 trái cây dãn rộng khoảng cách để chém cực chuẩn.<br>
+      🗡 Vung tay chém đúng từ tiếng Anh tương ứng với nghĩa tiếng Việt!<br>
+      <i>(Hỗ trợ cả di chuột/vuốt màn hình nếu máy chưa nhận camera)</i>
     </p>
     <button class="btn-action" onclick="startGame()">BẬT CAMERA & BẮT ĐẦU 🚀</button>
   </div>
 
-  <!-- MÀN HÌNH TỔNG KẾT -->
+  <!-- POPUP KẾT THÚC 25 TỪ -->
   <div id="end-modal" style="display: none;">
-    <h1 style="font-size: 52px; color: #facc15; margin-bottom: 15px;">🏆 XUẤT SẮC HOÀN THÀNH!</h1>
-    <p style="font-size: 28px; color: #94a3b8; margin-bottom: 25px;">Em đã xuất sắc chinh phục trọn bộ 25 từ vựng Sức Khỏe!</p>
-    <div style="font-size: 32px; color: #38bdf8; margin: 15px 0;">⭐ Tổng Điểm: <b id="final-score">0</b></div>
-    <button class="btn-action" onclick="restartGame()">CHƠI LẠI TỪ ĐẦU 🔄</button>
+    <h1 style="font-size: 52px; color: #facc15; margin-bottom: 15px;">🏆 XUẤT SẮC HOÀN THÀNH 25 TỪ!</h1>
+    <p style="font-size: 28px; color: #94a3b8; margin-bottom: 25px;">Em đã thành thạo toàn bộ từ vựng Unit Healthy Living!</p>
+    <div style="font-size: 34px; color: #38bdf8; margin: 15px 0;">⭐ Tổng Điểm: <b id="final-score">0</b></div>
+    <button class="btn-action" onclick="restartGame()">CHƠI LẠI VÒNG MỚI 🔄</button>
   </div>
 
   <script>
-    // 25 TỪ VỰNG CHUẨN TỪ ẢNH
-    const vocabList = [
+    // TOÀN BỘ 25 TỪ VỰNG CHUẨN XÁC TỪ ẢNH
+    const fullVocabList = [
       { id: 1, word: "healthy living", ipa: "/ˌhelθi ˈlɪvɪŋ/", pos: "n.phr", vn: "lối sống lành mạnh" },
       { id: 2, word: "schoolwork", ipa: "/ˈskuːlwɜːk/", pos: "n", vn: "việc học ở trường" },
       { id: 3, word: "physical health", ipa: "/ˌfɪzɪkl ˈhelθ/", pos: "n.phr", vn: "sức khỏe thể chất" },
@@ -235,7 +238,7 @@
       { id: 25, word: "fattening food", ipa: "/ˈfætnɪŋ fuːd/", pos: "n.phr", vn: "đồ ăn dễ gây béo" }
     ];
 
-    const fruitColors = [
+    const fruitStyles = [
       { fill: "#ef4444", border: "#f87171", icon: "🍉" }, // Dưa hấu
       { fill: "#f97316", border: "#fb923c", icon: "🍊" }, // Cam
       { fill: "#84cc16", border: "#a3e635", icon: "🍏" }, // Táo xanh
@@ -243,19 +246,33 @@
       { fill: "#a855f7", border: "#c084fc", icon: "🍇" }  // Nho
     ];
 
+    let randomizedVocab = [];
     let canvas, ctx;
     let currentIdx = 0;
     let score = 0;
     let activeFruits = [];
     let particles = [];
-    let bladeTrail = []; // Danh sách tọa độ lưỡi kiếm
-    let currentHandPos = { x: -100, y: -100, active: false };
+    let bladeTrail = [];
+
+    // Vị trí tay có bộ lọc làm mượt (Smoothing)
+    let rawHandPos = { x: -100, y: -100, active: false };
+    let smoothHandPos = { x: -100, y: -100 };
+    const SMOOTH_FACTOR = 0.45; // Làm mượt chống rung giật
 
     let roundTimer = 15;
     let timerInterval = null;
     let isRoundActive = false;
 
-    // KHỞI ĐỘNG GAME & WEBCAM
+    // THUẬT TOÁN XÁO TRỘN FISHER-YATES CHUẨN XÁC
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
     async function startGame() {
       document.getElementById('start-modal').style.display = 'none';
       canvas = document.getElementById('game-canvas');
@@ -265,11 +282,9 @@
 
       initAudio();
       setupMouseFallback();
-      await initMediaPipeHands();
+      await initEnhancedHands();
 
-      currentIdx = 0;
-      score = 0;
-      startRound();
+      restartGame();
       requestAnimationFrame(gameLoop);
     }
 
@@ -278,50 +293,56 @@
       canvas.height = window.innerHeight;
     }
 
-    // KHỞI TẠO MEDIAPIPE HANDS ĐÃ FIX KHÔNG BỊ TREO/ĐỨNG
-    async function initMediaPipeHands() {
+    // KHỞI TẠO MEDIAPIPE TĂNG CƯỜNG ĐỘ CHÍNH XÁC NHẬN DIỆN BÀN TAY
+    async function initEnhancedHands() {
       const videoElement = document.getElementById('webcam-bg');
 
       const hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
       });
 
+      // Tăng cường độ chính xác nhận diện bàn tay
       hands.setOptions({
         maxNumHands: 1,
-        modelComplexity: 0, // Dùng model nhẹ để không giật lag
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        modelComplexity: 1, // Tăng lên 1 để nhận diện chuẩn nét hơn
+        minDetectionConfidence: 0.7, // Tăng ngưỡng phát hiện
+        minTrackingConfidence: 0.7   // Tăng độ ổn định theo dõi chuyển động
       });
 
-      // Nhận diện liên tục mỗi khi có kết quả
       hands.onResults((results) => {
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
           const landmarks = results.multiHandLandmarks[0];
-          const tip = landmarks[8]; // Ngón tay trỏ (Index Finger Tip)
+          const tip = landmarks[8]; // Đầu ngón tay trỏ
 
-          // Lật gương X: vì webcam lật gương (scaleX(-1)), nên tọa độ hiển thị x = (1 - tip.x) * width
+          // Lật gương tọa độ X để đồng bộ với cơ thể nhìn vào gương
           const targetX = (1 - tip.x) * canvas.width;
           const targetY = tip.y * canvas.height;
 
-          // Cập nhật tọa độ mượt mà
-          currentHandPos.x = targetX;
-          currentHandPos.y = targetY;
-          currentHandPos.active = true;
+          rawHandPos.x = targetX;
+          rawHandPos.y = targetY;
+          rawHandPos.active = true;
 
-          // Hiện điểm con trỏ bàn tay neon
+          // Bộ lọc làm mượt chuyển động (EMA)
+          if (smoothHandPos.x === -100) {
+            smoothHandPos.x = targetX;
+            smoothHandPos.y = targetY;
+          } else {
+            smoothHandPos.x += (targetX - smoothHandPos.x) * SMOOTH_FACTOR;
+            smoothHandPos.y += (targetY - smoothHandPos.y) * SMOOTH_FACTOR;
+          }
+
+          // Cập nhật con trỏ neon
           const cursor = document.getElementById('hand-cursor');
           cursor.style.display = 'block';
-          cursor.style.left = targetX + 'px';
-          cursor.style.top = targetY + 'px';
+          cursor.style.left = smoothHandPos.x + 'px';
+          cursor.style.top = smoothHandPos.y + 'px';
 
-          // Đưa vào vệt kiếm
-          bladeTrail.push({ x: targetX, y: targetY, time: performance.now() });
+          bladeTrail.push({ x: smoothHandPos.x, y: smoothHandPos.y, time: performance.now() });
         } else {
-          currentHandPos.active = false;
+          rawHandPos.active = false;
         }
       });
 
-      // Bật camera thông qua CameraUtils
       const camera = new Camera(videoElement, {
         onFrame: async () => {
           await hands.send({ image: videoElement });
@@ -332,12 +353,12 @@
       camera.start();
     }
 
-    // CHUỘT DỰ PHÒNG LIÊN TỤC
+    // CHUỘT DỰ PHÒNG HOẠT ĐỘNG SONG SONG
     function setupMouseFallback() {
       window.addEventListener('mousemove', (e) => {
-        currentHandPos.x = e.clientX;
-        currentHandPos.y = e.clientY;
-        currentHandPos.active = true;
+        smoothHandPos.x = e.clientX;
+        smoothHandPos.y = e.clientY;
+        rawHandPos.active = true;
 
         const cursor = document.getElementById('hand-cursor');
         cursor.style.display = 'block';
@@ -348,25 +369,35 @@
       });
     }
 
-    // BẮT ĐẦU MỖI ĐỢT: 5 TRÁI CÂY BAY CHẬM RÃI (15 GIÂY)
+    // XÁO TRỘN TOÀN BỘ 25 TỪ VÀ BẮT ĐẦU VÒNG CHƠI MỚI
+    function restartGame() {
+      document.getElementById('end-modal').style.display = 'none';
+      randomizedVocab = shuffleArray(fullVocabList); // Xáo trộn đủ 25 từ
+      currentIdx = 0;
+      score = 0;
+      document.getElementById('hud-score').innerText = `Điểm: 0 ⭐`;
+      startRound();
+    }
+
+    // BẮT ĐẦU MỖI CÂU: 5 LÀN RIÊNG BIỆT DÃN XA NHAU
     function startRound() {
-      if (currentIdx >= vocabList.length) {
+      if (currentIdx >= randomizedVocab.length) {
         showEndGame();
         return;
       }
 
       isRoundActive = true;
       activeFruits = [];
-      const currentVocab = vocabList[currentIdx];
+      const currentVocab = randomizedVocab[currentIdx];
 
-      // Cập nhật bảng nhiệm vụ
+      // Cập nhật HUD & Bảng nhiệm vụ
       document.getElementById('hud-progress').innerText = `Từ: ${currentIdx + 1} / 25`;
       document.getElementById('target-vn').innerText = `"${currentVocab.vn}"`;
       document.getElementById('target-ipa').innerText = `${currentVocab.pos} • ${currentVocab.ipa}`;
 
-      // Tạo 1 trái cây ĐÚNG và 4 trái cây SAI
-      let wrongPool = vocabList.filter(item => item.id !== currentVocab.id);
-      wrongPool.sort(() => Math.random() - 0.5);
+      // Chọn 4 từ sai ngẫu nhiên trong 24 từ còn lại
+      let wrongPool = fullVocabList.filter(item => item.id !== currentVocab.id);
+      wrongPool = shuffleArray(wrongPool);
 
       let roundChoices = [
         { text: currentVocab.word, isCorrect: true },
@@ -376,48 +407,51 @@
         { text: wrongPool[3].word, isCorrect: false }
       ];
       // Xáo trộn vị trí 5 quả
-      roundChoices.sort(() => Math.random() - 0.5);
+      roundChoices = shuffleArray(roundChoices);
 
-      // Cho 5 quả cùng bay lên với vận tốc chậm (Slow-motion)
-      const slotWidth = canvas.width / 6;
+      // CĂN CHỈNH 5 LÀN RIÊNG BIỆT DÃN XA NHAU (Tránh chém dính chùm)
+      // Chia màn hình thành 5 khoảng: 10%, 28%, 50%, 72%, 90%
+      const laneCenters = [0.10, 0.28, 0.50, 0.72, 0.90];
+
       roundChoices.forEach((choice, index) => {
-        const fruitVisual = fruitColors[index % fruitColors.length];
+        const style = fruitStyles[index % fruitStyles.length];
+        const spawnX = canvas.width * laneCenters[index];
+
         activeFruits.push({
-          x: slotWidth * (index + 1) + (Math.random() * 40 - 20),
-          y: canvas.height + 60,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: -(canvas.height * 0.0135 + Math.random() * 1.5), // Lực đẩy vừa phải
-          gravity: 0.16, // Trọng lực rất nhẹ để bay lơ lửng lâu
-          radius: 65,
+          x: spawnX,
+          y: canvas.height + 70,
+          vx: (Math.random() - 0.5) * 0.8, // Độ lệch ngang rất nhỏ để giữ thẳng làn
+          vy: -(canvas.height * 0.0135 + Math.random() * 1.2), // Bắn bổng chậm
+          gravity: 0.16, // Trọng lực nhẹ bay lơ lửng lâu
+          radius: 60, // Kích thước gọn gàng, cách xa nhau
           text: choice.text,
           isCorrect: choice.isCorrect,
-          color: fruitVisual.fill,
-          border: fruitVisual.border,
-          icon: fruitVisual.icon,
+          color: style.fill,
+          border: style.border,
+          icon: style.icon,
           isSliced: false,
           sliceAlpha: 1
         });
       });
 
-      // ĐẾM NGƯỢC 15 GIÂY
+      // BỘ ĐẾM NGƯỢC 15 GIÂY
       clearInterval(timerInterval);
       roundTimer = 15;
       const timerBadge = document.getElementById('hud-timer');
       timerBadge.innerText = `⏱ ${roundTimer}s`;
-      timerBadge.style.background = "rgba(66, 32, 6, 0.9)";
+      timerBadge.style.background = "rgba(66, 32, 6, 0.95)";
 
       timerInterval = setInterval(() => {
         roundTimer--;
         timerBadge.innerText = `⏱ ${roundTimer}s`;
 
         if (roundTimer <= 4) {
-          timerBadge.style.background = "rgba(127, 29, 29, 0.9)";
+          timerBadge.style.background = "rgba(127, 29, 29, 0.95)";
         }
 
         if (roundTimer <= 0) {
           clearInterval(timerInterval);
           playBuzzSound();
-          // Hết giờ: tự động qua từ tiếp theo
           nextRound();
         }
       }, 1000);
@@ -431,33 +465,256 @@
       }, 1200);
     }
 
-    // VÒNG LẶP DỰNG HÌNH (GAME LOOP)
+    // VÒNG LẶP RENDER DỰNG HÌNH 60 FPS
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Cập nhật và vẽ trái cây
+      // Cập nhật vị trí và vẽ trái cây
       activeFruits.forEach((fruit) => {
         if (!fruit.isSliced) {
           fruit.x += fruit.vx;
           fruit.y += fruit.vy;
           fruit.vy += fruit.gravity;
 
-          // Nếu quả rơi xuống đáy màn hình mà chưa hết 15s thì đẩy nảy ngược nhẹ lên lại để học sinh kịp chém
+          // Nếu rơi xuống đáy trước khi hết 15s thì nảy nhẹ lên lại cho học sinh chém
           if (fruit.y > canvas.height + 80 && isRoundActive) {
-            fruit.y = canvas.height + 50;
+            fruit.y = canvas.height + 60;
             fruit.vy = -(canvas.height * 0.012 + Math.random() * 1);
           }
 
-          // Kiểm tra chém va chạm với vệt kiếm
           checkSliceCollision(fruit);
           drawFruit(fruit);
         } else {
-          // Hiệu ứng quả đã chém tách đôi
           drawSlicedFruit(fruit);
         }
       });
 
-      // 2. Vẽ hiệu ứng nước ép tóe ra
       updateAndDrawParticles();
+      drawBladeTrail();
 
-      // 3. Vẽ v
+      requestAnimationFrame(gameLoop);
+    }
+
+    // VẼ TRÁI CÂY VÀ CHỮ TỪ VỰNG DÃN NÉT
+    function drawFruit(fruit) {
+      ctx.save();
+      ctx.shadowColor = fruit.color;
+      ctx.shadowBlur = 18;
+
+      ctx.beginPath();
+      ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
+      ctx.fillStyle = fruit.color;
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = fruit.border;
+      ctx.stroke();
+
+      // Icon quả nhỏ
+      ctx.font = "26px serif";
+      ctx.textAlign = "center";
+      ctx.fillText(fruit.icon, fruit.x, fruit.y - fruit.radius + 20);
+
+      // Chữ từ vựng tiếng Anh
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 19px 'Times New Roman'";
+      ctx.textAlign = "center";
+      wrapText(ctx, fruit.text, fruit.x, fruit.y + 6, fruit.radius * 1.8, 22);
+
+      ctx.restore();
+    }
+
+    // VẼ QUẢ BỊ TÁCH ĐÔI KHI CHÉM TRÚNG
+    function drawSlicedFruit(fruit) {
+      fruit.sliceAlpha -= 0.02;
+      if (fruit.sliceAlpha <= 0) return;
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, fruit.sliceAlpha);
+
+      // Nửa trái
+      ctx.beginPath();
+      ctx.arc(fruit.x - 26, fruit.y, fruit.radius * 0.85, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.fillStyle = fruit.color;
+      ctx.fill();
+
+      // Nửa phải
+      ctx.beginPath();
+      ctx.arc(fruit.x + 26, fruit.y, fruit.radius * 0.85, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.fillStyle = fruit.color;
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // KIỂM TRA VA CHẠM ĐƯỢC CĂN CHỈNH BÁN KÍNH CHUẨN XÁC
+    function checkSliceCollision(fruit) {
+      if (!rawHandPos.active || bladeTrail.length < 2) return;
+
+      const p1 = bladeTrail[bladeTrail.length - 1];
+      const p2 = bladeTrail[bladeTrail.length - 2];
+
+      const dist = Math.hypot(p1.x - fruit.x, p1.y - fruit.y);
+      const speed = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+
+      // Bán kính va chạm chuẩn (không bị lấn sang quả kế bên)
+      if (dist < fruit.radius + 8 && speed > 5) {
+        fruit.isSliced = true;
+        createSplashParticles(fruit.x, fruit.y, fruit.color);
+
+        if (fruit.isCorrect) {
+          playSlashSound();
+          score += 100;
+          document.getElementById('hud-score').innerText = `Điểm: ${score} ⭐`;
+          clearInterval(timerInterval);
+          nextRound();
+        } else {
+          playBuzzSound();
+        }
+      }
+    }
+
+    // VẼ VỆT KIẾM NEON MƯỢT MÀ THEO ĐẦU NGÓN TAY
+    function drawBladeTrail() {
+      const now = performance.now();
+      bladeTrail = bladeTrail.filter(pt => now - pt.time < 200);
+
+      if (bladeTrail.length < 2) return;
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      for (let i = 1; i < bladeTrail.length; i++) {
+        const pt1 = bladeTrail[i - 1];
+        const pt2 = bladeTrail[i];
+        const age = now - pt2.time;
+        const progress = 1 - (age / 200);
+
+        // Vệt ánh sáng neon xanh dương
+        ctx.beginPath();
+        ctx.moveTo(pt1.x, pt1.y);
+        ctx.lineTo(pt2.x, pt2.y);
+        ctx.strokeStyle = `rgba(56, 189, 248, ${progress * 0.75})`;
+        ctx.lineWidth = 15 * progress;
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+
+        // Lõi kiếm Katana màu trắng
+        ctx.beginPath();
+        ctx.moveTo(pt1.x, pt1.y);
+        ctx.lineTo(pt2.x, pt2.y);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${progress})`;
+        ctx.lineWidth = 5 * progress;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // HIỆU ỨNG NƯỚC TÓE RA
+    function createSplashParticles(x, y, color) {
+      for (let i = 0; i < 22; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 5 + 3,
+          color: color,
+          alpha: 1
+        });
+      }
+    }
+
+    function updateAndDrawParticles() {
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.alpha -= 0.035;
+
+        if (p.alpha <= 0) {
+          particles.splice(idx, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      let lines = [];
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = context.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+
+      const startY = y - ((lines.length - 1) * lineHeight) / 2;
+      for (let k = 0; k < lines.length; k++) {
+        context.fillText(lines[k].trim(), x, startY + (k * lineHeight));
+      }
+    }
+
+    function showEndGame() {
+      clearInterval(timerInterval);
+      document.getElementById('end-modal').style.display = 'flex';
+      document.getElementById('final-score').innerText = `${score} PTS`;
+    }
+
+    // ÂM THANH WEB AUDIO
+    let audioCtx = null;
+    function initAudio() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {}
+    }
+
+    function playSlashSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function playBuzzSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+  </script>
+</body>
+</html>
