@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>AI Motion Fruit Ninja - 25 Healthy Living Vocab</title>
-  <!-- MediaPipe Hands & Camera Utils -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  <!-- MediaPipe Hands & Camera Utils từ CDN chính thức -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,12 +28,12 @@
       height: 100vh;
       object-fit: cover;
       transform: scaleX(-1);
-      opacity: 0.38;
+      opacity: 0.45;
       z-index: 1;
-      filter: contrast(1.15) brightness(0.85);
+      filter: contrast(1.2) brightness(0.9);
     }
 
-    /* CANVAS GAME */
+    /* CANVAS VẼ GAME VÀ HIỆU ỨNG TAY */
     #game-canvas {
       position: absolute;
       top: 0;
@@ -53,7 +53,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 45px;
+      padding: 0 40px;
       background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0) 100%);
       z-index: 10;
     }
@@ -61,7 +61,7 @@
       font-size: 26px;
       font-weight: bold;
       color: #38bdf8;
-      background: rgba(30, 41, 59, 0.9);
+      background: rgba(30, 41, 59, 0.92);
       border: 2px solid #0284c7;
       padding: 8px 22px;
       border-radius: 14px;
@@ -76,10 +76,24 @@
       padding: 8px 30px;
       border-radius: 16px;
       box-shadow: 0 0 25px rgba(202, 138, 4, 0.5);
-      transition: all 0.3s;
     }
 
-    /* BẢNG NHIỆM VỤ NGHĨA TIẾNG VIỆT */
+    /* TRẠNG THÁI CAMERA */
+    #cam-status {
+      position: absolute;
+      bottom: 15px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #38bdf8;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #0284c7;
+      padding: 6px 18px;
+      border-radius: 20px;
+      z-index: 15;
+    }
+
+    /* BẢNG NHIỆM VỤ TỪ VỰNG TIẾNG VIỆT */
     .mission-card {
       position: absolute;
       top: 95px;
@@ -95,7 +109,7 @@
       max-width: 80%;
     }
     .mission-label {
-      font-size: 19px;
+      font-size: 18px;
       color: #94a3b8;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -113,11 +127,11 @@
       font-style: italic;
     }
 
-    /* MODAL KHỞI ĐỘNG & KẾT THÚC */
+    /* MODAL BẮT ĐẦU VÀ KẾT THÚC */
     #start-modal, #end-modal {
       position: absolute;
       inset: 0;
-      background: rgba(2, 6, 23, 0.96);
+      background: rgba(2, 6, 23, 0.97);
       z-index: 100;
       display: flex;
       flex-direction: column;
@@ -125,6 +139,19 @@
       align-items: center;
       text-align: center;
       padding: 30px;
+    }
+    .summary-box {
+      background: #0f172a;
+      border: 3px solid #38bdf8;
+      border-radius: 24px;
+      padding: 35px 55px;
+      max-width: 700px;
+      box-shadow: 0 0 45px rgba(56, 189, 248, 0.35);
+    }
+    .stat-line {
+      font-size: 28px;
+      margin: 14px 0;
+      color: #f1f5f9;
     }
     .btn-action {
       font-family: "Times New Roman", Times, serif;
@@ -136,7 +163,7 @@
       border: none;
       border-radius: 16px;
       cursor: pointer;
-      margin-top: 30px;
+      margin-top: 25px;
       box-shadow: 0 0 30px rgba(2, 132, 199, 0.6);
       transition: all 0.2s;
     }
@@ -144,71 +171,65 @@
       background: #0369a1;
       transform: scale(1.05);
     }
-
-    /* ĐIỂM CHỈ TAY NEON */
-    #hand-cursor {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 4px solid #38bdf8;
-      box-shadow: 0 0 25px #38bdf8, 0 0 50px #0284c7;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      z-index: 50;
-      display: none;
-    }
   </style>
 </head>
 <body>
 
-  <!-- CAMERA WEBCAM -->
+  <!-- WEBCAM -->
   <video id="webcam-bg" autoplay playsinline muted></video>
 
-  <!-- CANVAS CHÉM HOA QUẢ -->
+  <!-- CANVAS CHÍNH -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- ĐIỂM NGÓN TAY TRỎ NEON -->
-  <div id="hand-cursor"></div>
+  <!-- BÁO TRẠNG THÁI -->
+  <div id="cam-status">Đang kết nối camera...</div>
 
-  <!-- THANH THÔNG SỐ HUD -->
+  <!-- THANH HUD -->
   <div class="hud-bar">
     <div class="hud-badge" id="hud-progress">Từ: 1 / 25</div>
     <div class="timer-badge" id="hud-timer">⏱ 15s</div>
     <div class="hud-badge" id="hud-score">Điểm: 0 ⭐</div>
   </div>
 
-  <!-- BẢNG TỪ VỰNG TIẾNG VIỆT -->
-  <div class="mission-card">
-    <div class="mission-label">🎯 HÃY VUNG TAY CHÉM TỪ CÓ NGHĨA LÀ:</div>
+  <!-- NHIỆM VỤ TIẾNG VIỆT -->
+  <div class="mission-card" id="mission-box">
+    <div class="mission-label">🎯 HÃY QUƠ TAY CHÉM TỪ CÓ NGHĨA LÀ:</div>
     <div class="mission-vn" id="target-vn">Đang tải câu hỏi...</div>
     <div class="mission-ipa" id="target-ipa">...</div>
   </div>
 
-  <!-- MÀN HÌNH BẮT ĐẦU -->
+  <!-- POPUP BẮT ĐẦU -->
   <div id="start-modal">
-    <h1 style="font-size: 52px; color: #38bdf8; margin-bottom: 20px;">⚔️ AI MOTION FRUIT NINJA ⚔️</h1>
+    <h1 style="font-size: 50px; color: #38bdf8; margin-bottom: 20px;">⚔️ AI MOTION FRUIT NINJA ⚔️</h1>
     <p style="font-size: 26px; max-width: 820px; line-height: 1.6; color: #cbd5e1;">
-      🍉 <b>Thử thách trọn bộ 25 từ vựng Sức Khỏe & Đời Sống:</b><br>
-      👉 Đứng trước camera, giơ ngón tay trỏ lên để kích hoạt luồng kiếm Katana.<br>
-      ⏱ Mỗi từ có <b>15 giây</b>, 5 trái cây dãn rộng khoảng cách để chém cực chuẩn.<br>
-      🗡 Vung tay chém đúng từ tiếng Anh tương ứng với nghĩa tiếng Việt!<br>
-      <i>(Hỗ trợ di chuột/vuốt màn hình nếu máy chưa nhận camera)</i>
+      🍉 <b>Thử thách trọn bộ 25 từ vựng Sức Khỏe:</b><br>
+      👉 Bấm nút bên dưới để cấp quyền Camera.<br>
+      ✨ Khớp ngón tay phát sáng và có tâm radar xoay tròn ở đầu ngón trỏ.<br>
+      ⏱ Trái cây bay bổng và rơi siêu chậm để các bạn tha hồ ngắm nghía!<br>
+      🏁 Hoàn thành đủ 25 từ sẽ dừng game và tổng kết vinh danh.<br>
+      <i>(Vẫn hỗ trợ di chuột / chạm màn hình)</i>
     </p>
     <button class="btn-action" onclick="startGame()">BẬT CAMERA & BẮT ĐẦU 🚀</button>
   </div>
 
-  <!-- MÀN HÌNH TỔNG KẾT -->
+  <!-- POPUP TỔNG KẾT SAU KHI ĐỦ 25 TỪ -->
   <div id="end-modal" style="display: none;">
-    <h1 style="font-size: 52px; color: #facc15; margin-bottom: 15px;">🏆 XUẤT SẮC HOÀN THÀNH 25 TỪ!</h1>
-    <p style="font-size: 28px; color: #94a3b8; margin-bottom: 25px;">Em đã thành thạo toàn bộ từ vựng Unit Healthy Living!</p>
-    <div style="font-size: 34px; color: #38bdf8; margin: 15px 0;">⭐ Tổng Điểm: <b id="final-score">0</b></div>
-    <button class="btn-action" onclick="restartGame()">CHƠI LẠI VÒNG MỚI 🔄</button>
+    <div class="summary-box">
+      <h1 style="font-size: 48px; color: #facc15; margin-bottom: 12px;">🏆 TỔNG KẾT VÒNG ĐẤU 🏆</h1>
+      <p style="font-size: 24px; color: #94a3b8; margin-bottom: 25px;">Đã hoàn thành toàn bộ 25 thuật ngữ Unit Healthy Living</p>
+      
+      <div class="stat-line">⭐ Tổng Điểm: <b id="final-score" style="color: #38bdf8;">0 PTS</b></div>
+      <div class="stat-line">🎯 Số từ chém đúng: <b id="final-correct" style="color: #4ade80;">0 / 25 từ</b></div>
+      <div class="stat-line" id="final-rank" style="font-size: 30px; font-weight: bold; margin-top: 15px; color: #c084fc;">
+        Danh hiệu: Ninja Huyền Thoại 🥷
+      </div>
+
+      <button class="btn-action" onclick="restartGame()">CHƠI LẠI VÒNG MỚI 🔄</button>
+    </div>
   </div>
 
   <script>
-    // TOÀN BỘ 25 TỪ VỰNG TỪ ẢNH GIÁO TRÌNH
+    // TOÀN BỘ 25 TỪ VỰNG CHUẨN XÁC
     const fullVocabList = [
       { id: 1, word: "healthy living", ipa: "/ˌhelθi ˈlɪvɪŋ/", pos: "n.phr", vn: "lối sống lành mạnh" },
       { id: 2, word: "schoolwork", ipa: "/ˈskuːlwɜːk/", pos: "n", vn: "việc học ở trường" },
@@ -245,21 +266,32 @@
       { fill: "#a855f7", border: "#c084fc", icon: "🍇" }
     ];
 
+    const HAND_CONNECTIONS = [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],[0,17]
+    ];
+
     let randomizedVocab = [];
     let canvas, ctx;
     let currentIdx = 0;
     let score = 0;
+    let correctCount = 0; // Đếm số từ chém đúng
     let activeFruits = [];
     let particles = [];
+    let sparkTrail = [];
     let bladeTrail = [];
 
-    let rawHandPos = { x: -100, y: -100, active: false };
-    let smoothHandPos = { x: -100, y: -100 };
-    const SMOOTH_FACTOR = 0.45;
+    let handX = -100, handY = -100, isHandActive = false;
+    let rawLandmarks = null;
+    let radarAngle = 0;
 
     let roundTimer = 15;
     let timerInterval = null;
     let isRoundActive = false;
+    let isGameEnded = false;
 
     function shuffleArray(array) {
       const arr = [...array];
@@ -270,7 +302,7 @@
       return arr;
     }
 
-    function startGame() {
+    async function startGame() {
       document.getElementById('start-modal').style.display = 'none';
       canvas = document.getElementById('game-canvas');
       ctx = canvas.getContext('2d');
@@ -280,422 +312,7 @@
       initAudio();
       setupMouseFallback();
 
-      // Bắt đầu game và vẽ ngay lập tức, không đợi camera
       restartGame();
       requestAnimationFrame(gameLoop);
 
-      // Khởi động Camera và MediaPipe song song phía sau
-      startCameraBackground();
-    }
-
-    function resizeCanvas() {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-
-    function startCameraBackground() {
-      try {
-        const videoElement = document.getElementById('webcam-bg');
-        if (typeof Hands === "undefined") return;
-
-        const hands = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
-        });
-
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 0,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        hands.onResults((results) => {
-          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            const landmarks = results.multiHandLandmarks[0];
-            const tip = landmarks[8];
-
-            const targetX = (1 - tip.x) * canvas.width;
-            const targetY = tip.y * canvas.height;
-
-            rawHandPos.x = targetX;
-            rawHandPos.y = targetY;
-            rawHandPos.active = true;
-
-            if (smoothHandPos.x === -100) {
-              smoothHandPos.x = targetX;
-              smoothHandPos.y = targetY;
-            } else {
-              smoothHandPos.x += (targetX - smoothHandPos.x) * SMOOTH_FACTOR;
-              smoothHandPos.y += (targetY - smoothHandPos.y) * SMOOTH_FACTOR;
-            }
-
-            const cursor = document.getElementById('hand-cursor');
-            cursor.style.display = 'block';
-            cursor.style.left = smoothHandPos.x + 'px';
-            cursor.style.top = smoothHandPos.y + 'px';
-
-            bladeTrail.push({ x: smoothHandPos.x, y: smoothHandPos.y, time: performance.now() });
-          } else {
-            rawHandPos.active = false;
-          }
-        });
-
-        if (typeof Camera !== "undefined") {
-          const camera = new Camera(videoElement, {
-            onFrame: async () => {
-              await hands.send({ image: videoElement });
-            },
-            width: 640,
-            height: 480
-          });
-          camera.start();
-        }
-      } catch (err) {
-        console.warn("Camera fallback active:", err);
-      }
-    }
-
-    function setupMouseFallback() {
-      window.addEventListener('mousemove', (e) => {
-        smoothHandPos.x = e.clientX;
-        smoothHandPos.y = e.clientY;
-        rawHandPos.active = true;
-
-        const cursor = document.getElementById('hand-cursor');
-        cursor.style.display = 'block';
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
-
-        bladeTrail.push({ x: e.clientX, y: e.clientY, time: performance.now() });
-      });
-    }
-
-    function restartGame() {
-      document.getElementById('end-modal').style.display = 'none';
-      randomizedVocab = shuffleArray(fullVocabList);
-      currentIdx = 0;
-      score = 0;
-      document.getElementById('hud-score').innerText = `Điểm: 0 ⭐`;
-      startRound();
-    }
-
-    function startRound() {
-      if (currentIdx >= randomizedVocab.length) {
-        showEndGame();
-        return;
-      }
-
-      isRoundActive = true;
-      activeFruits = [];
-      const currentVocab = randomizedVocab[currentIdx];
-
-      // Cập nhật ngay tức thì nghĩa tiếng Việt và IPA
-      document.getElementById('hud-progress').innerText = `Từ: ${currentIdx + 1} / 25`;
-      document.getElementById('target-vn').innerText = `"${currentVocab.vn}"`;
-      document.getElementById('target-ipa').innerText = `${currentVocab.pos} • ${currentVocab.ipa}`;
-
-      let wrongPool = fullVocabList.filter(item => item.id !== currentVocab.id);
-      wrongPool = shuffleArray(wrongPool);
-
-      let roundChoices = [
-        { text: currentVocab.word, isCorrect: true },
-        { text: wrongPool[0].word, isCorrect: false },
-        { text: wrongPool[1].word, isCorrect: false },
-        { text: wrongPool[2].word, isCorrect: false },
-        { text: wrongPool[3].word, isCorrect: false }
-      ];
-      roundChoices = shuffleArray(roundChoices);
-
-      // Căn chỉnh 5 quả ở 5 làn riêng biệt
-      const laneCenters = [0.10, 0.28, 0.50, 0.72, 0.90];
-
-      roundChoices.forEach((choice, index) => {
-        const style = fruitStyles[index % fruitStyles.length];
-        const spawnX = canvas.width * laneCenters[index];
-
-        activeFruits.push({
-          x: spawnX,
-          y: canvas.height + 70,
-          vx: (Math.random() - 0.5) * 0.8,
-          vy: -(canvas.height * 0.0135 + Math.random() * 1.2),
-          gravity: 0.16,
-          radius: 60,
-          text: choice.text,
-          isCorrect: choice.isCorrect,
-          color: style.fill,
-          border: style.border,
-          icon: style.icon,
-          isSliced: false,
-          sliceAlpha: 1
-        });
-      });
-
-      // ĐẾM NGƯỢC 15 GIÂY
-      clearInterval(timerInterval);
-      roundTimer = 15;
-      const timerBadge = document.getElementById('hud-timer');
-      timerBadge.innerText = `⏱ ${roundTimer}s`;
-      timerBadge.style.background = "rgba(66, 32, 6, 0.95)";
-
-      timerInterval = setInterval(() => {
-        roundTimer--;
-        timerBadge.innerText = `⏱ ${roundTimer}s`;
-
-        if (roundTimer <= 4) {
-          timerBadge.style.background = "rgba(127, 29, 29, 0.95)";
-        }
-
-        if (roundTimer <= 0) {
-          clearInterval(timerInterval);
-          playBuzzSound();
-          nextRound();
-        }
-      }, 1000);
-    }
-
-    function nextRound() {
-      isRoundActive = false;
-      setTimeout(() => {
-        currentIdx++;
-        startRound();
-      }, 1200);
-    }
-
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      activeFruits.forEach((fruit) => {
-        if (!fruit.isSliced) {
-          fruit.x += fruit.vx;
-          fruit.y += fruit.vy;
-          fruit.vy += fruit.gravity;
-
-          if (fruit.y > canvas.height + 80 && isRoundActive) {
-            fruit.y = canvas.height + 60;
-            fruit.vy = -(canvas.height * 0.012 + Math.random() * 1);
-          }
-
-          checkSliceCollision(fruit);
-          drawFruit(fruit);
-        } else {
-          drawSlicedFruit(fruit);
-        }
-      });
-
-      updateAndDrawParticles();
-      drawBladeTrail();
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    function drawFruit(fruit) {
-      ctx.save();
-      ctx.shadowColor = fruit.color;
-      ctx.shadowBlur = 18;
-
-      ctx.beginPath();
-      ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = fruit.border;
-      ctx.stroke();
-
-      ctx.font = "26px serif";
-      ctx.textAlign = "center";
-      ctx.fillText(fruit.icon, fruit.x, fruit.y - fruit.radius + 20);
-
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 19px 'Times New Roman'";
-      ctx.textAlign = "center";
-      wrapText(ctx, fruit.text, fruit.x, fruit.y + 6, fruit.radius * 1.8, 22);
-
-      ctx.restore();
-    }
-
-    function drawSlicedFruit(fruit) {
-      fruit.sliceAlpha -= 0.02;
-      if (fruit.sliceAlpha <= 0) return;
-
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, fruit.sliceAlpha);
-
-      ctx.beginPath();
-      ctx.arc(fruit.x - 26, fruit.y, fruit.radius * 0.85, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(fruit.x + 26, fruit.y, fruit.radius * 0.85, -Math.PI * 0.5, Math.PI * 0.5);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function checkSliceCollision(fruit) {
-      if (!rawHandPos.active || bladeTrail.length < 2) return;
-
-      const p1 = bladeTrail[bladeTrail.length - 1];
-      const p2 = bladeTrail[bladeTrail.length - 2];
-
-      const dist = Math.hypot(p1.x - fruit.x, p1.y - fruit.y);
-      const speed = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-
-      if (dist < fruit.radius + 8 && speed > 5) {
-        fruit.isSliced = true;
-        createSplashParticles(fruit.x, fruit.y, fruit.color);
-
-        if (fruit.isCorrect) {
-          playSlashSound();
-          score += 100;
-          document.getElementById('hud-score').innerText = `Điểm: ${score} ⭐`;
-          clearInterval(timerInterval);
-          nextRound();
-        } else {
-          playBuzzSound();
-        }
-      }
-    }
-
-    function drawBladeTrail() {
-      const now = performance.now();
-      bladeTrail = bladeTrail.filter(pt => now - pt.time < 200);
-
-      if (bladeTrail.length < 2) return;
-
-      ctx.save();
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      for (let i = 1; i < bladeTrail.length; i++) {
-        const pt1 = bladeTrail[i - 1];
-        const pt2 = bladeTrail[i];
-        const age = now - pt2.time;
-        const progress = 1 - (age / 200);
-
-        ctx.beginPath();
-        ctx.moveTo(pt1.x, pt1.y);
-        ctx.lineTo(pt2.x, pt2.y);
-        ctx.strokeStyle = `rgba(56, 189, 248, ${progress * 0.75})`;
-        ctx.lineWidth = 15 * progress;
-        ctx.shadowColor = "#38bdf8";
-        ctx.shadowBlur = 18;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(pt1.x, pt1.y);
-        ctx.lineTo(pt2.x, pt2.y);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${progress})`;
-        ctx.lineWidth = 5 * progress;
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function createSplashParticles(x, y, color) {
-      for (let i = 0; i < 22; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 8 + 3;
-        particles.push({
-          x: x,
-          y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          radius: Math.random() * 5 + 3,
-          color: color,
-          alpha: 1
-        });
-      }
-    }
-
-    function updateAndDrawParticles() {
-      particles.forEach((p, idx) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.2;
-        p.alpha -= 0.035;
-
-        if (p.alpha <= 0) {
-          particles.splice(idx, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = p.alpha;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.fill();
-          ctx.restore();
-        }
-      });
-    }
-
-    function wrapText(context, text, x, y, maxWidth, lineHeight) {
-      const words = text.split(' ');
-      let line = '';
-      let lines = [];
-
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = context.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-          lines.push(line);
-          line = words[n] + ' ';
-        } else {
-          line = testLine;
-        }
-      }
-      lines.push(line);
-
-      const startY = y - ((lines.length - 1) * lineHeight) / 2;
-      for (let k = 0; k < lines.length; k++) {
-        context.fillText(lines[k].trim(), x, startY + (k * lineHeight));
-      }
-    }
-
-    function showEndGame() {
-      clearInterval(timerInterval);
-      document.getElementById('end-modal').style.display = 'flex';
-      document.getElementById('final-score').innerText = `${score} PTS`;
-    }
-
-    let audioCtx = null;
-    function initAudio() {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      } catch (e) {}
-    }
-
-    function playSlashSound() {
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    }
-
-    function playBuzzSound() {
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.25);
-    }
-  </script>
-</body>
-</html>
+      await initDirectWeb
