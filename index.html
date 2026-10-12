@@ -2,1196 +2,462 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ninja Từ Vựng - AI Hand Gesture Fruit Slicer (25 Vocab)</title>
-  
-  <!-- MediaPipe Hands & Camera Utils CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <title>AI Hand Fruit Ninja - Healthy Living Vocab</title>
+  <!-- Bộ thư viện MediaPipe Hands chuẩn ổn định -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    body, html {
-      width: 100%;
-      height: 100%;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      background: #020617;
+      color: #f8fafc;
       overflow: hidden;
-      font-family: 'Times New Roman', Times, serif;
-      background-color: #050201;
-      color: #ffffff;
-    }
-
-    #game-container {
-      position: relative;
-      width: 100vw;
       height: 100vh;
-      overflow: hidden;
-      cursor: crosshair;
+      width: 100vw;
+      user-select: none;
     }
 
-    /* Video Webcam ẩn dùng làm nguồn xử lý AI */
-    video#webcam {
-      display: none;
-    }
-
-    /* Canvas chính hiển thị cả webcam, trái cây, kiếm katana và hạt hiệu ứng */
-    canvas#gameCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Giao diện Heads-Up Display (HUD) */
-    .hud-overlay {
+    /* KHUNG WEBCAM NỀN MỜ LẬT GƯƠNG */
+    #webcam-bg {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px 30px;
-      z-index: 10;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      opacity: 0.35;
+      z-index: 1;
+      filter: contrast(1.1) brightness(0.8);
     }
 
-    .top-stats-row {
-      width: 100%;
+    /* CANVAS ĐỒ HỌA GAME & HIỆU ỨNG KIẾM */
+    #game-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+    }
+
+    /* THANH THÔNG TIN TRÊN CÙNG */
+    .hud-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 85px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 0 40px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0) 100%);
+      z-index: 10;
     }
-
-    .stat-pill {
-      background: rgba(15, 23, 42, 0.9);
-      border: 2px solid #eab308;
-      border-radius: 14px;
-      padding: 8px 22px;
-      color: #fef08a;
+    .hud-badge {
       font-size: 26px;
       font-weight: bold;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      color: #38bdf8;
+      background: rgba(30, 41, 59, 0.85);
+      border: 2px solid #0284c7;
+      padding: 8px 22px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
     }
-
-    .timer-pill {
-      background: rgba(69, 26, 3, 0.95);
-      border: 3px solid #f59e0b;
-      color: #fde047;
-      font-size: 30px;
-      padding: 8px 28px;
-      border-radius: 16px;
-      animation: pulseGlow 1.2s infinite alternate;
-    }
-
-    @keyframes pulseGlow {
-      from { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
-      to { box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); transform: scale(1.03); }
-    }
-
-    .lives-box {
-      font-size: 28px;
-      color: #ef4444;
-      letter-spacing: 5px;
-    }
-
-    /* Bảng nhiệm vụ từ vựng ở trên cùng */
-    .mission-board {
-      margin-top: 10px;
-      background: linear-gradient(135deg, rgba(20, 10, 5, 0.95), rgba(45, 15, 5, 0.95));
-      border: 3px solid #eab308;
-      border-radius: 20px;
-      padding: 10px 36px;
-      text-align: center;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 25px rgba(234, 179, 8, 0.4);
-      max-width: 900px;
-      width: 92%;
-      pointer-events: auto;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .mission-board.bounce {
-      transform: scale(1.04);
-    }
-
-    .mission-header {
-      font-size: 20px;
+    .timer-badge {
+      font-size: 32px;
+      font-weight: bold;
       color: #facc15;
+      background: rgba(66, 32, 6, 0.9);
+      border: 3px solid #ca8a04;
+      padding: 8px 28px;
+      border-radius: 14px;
+      box-shadow: 0 0 20px rgba(202, 138, 4, 0.4);
+    }
+
+    /* BẢNG NHIỆM VỤ TỪ VỰNG CẦN CHÉM */
+    .mission-card {
+      position: absolute;
+      top: 95px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      border: 3px solid #38bdf8;
+      border-radius: 18px;
+      padding: 12px 35px;
+      text-align: center;
+      z-index: 10;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+    .mission-label {
+      font-size: 20px;
+      color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 2px;
-      font-weight: bold;
     }
-
-    .mission-vietnamese {
+    .mission-vn {
       font-size: 36px;
       font-weight: bold;
-      color: #ffffff;
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
-      margin: 2px 0;
+      color: #facc15;
+      margin: 4px 0;
     }
-
-    .mission-phonetics {
-      font-size: 24px;
-      color: #93c5fd;
+    .mission-ipa {
+      font-size: 22px;
+      color: #38bdf8;
       font-style: italic;
     }
 
-    /* Thông báo trạng thái bàn tay AI */
-    .hand-status-badge {
-      margin-top: 8px;
-      background: rgba(0, 0, 0, 0.7);
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      font-size: 20px;
-      padding: 4px 18px;
-      border-radius: 20px;
-      display: inline-block;
-      font-weight: bold;
-    }
-
-    /* Popup Combo & Điểm thưởng */
-    #combo-popup {
-      position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      font-size: 52px;
-      font-weight: bold;
-      color: #fbbf24;
-      text-shadow: 0 0 25px #ca8a04, 3px 3px 8px #000;
-      pointer-events: none;
-      z-index: 25;
-      transition: transform 0.25s ease-out, opacity 0.3s;
-      opacity: 0;
-    }
-
-    /* Hộp thoại thông báo Modal */
-    .modal-backdrop {
+    /* MÀN HÌNH BẮT ĐẦU */
+    #start-modal, #end-modal {
       position: absolute;
       inset: 0;
-      background: rgba(8, 4, 2, 0.92);
+      background: rgba(2, 6, 23, 0.96);
+      z-index: 100;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 100;
-      padding: 20px;
-    }
-
-    .modal-card {
-      background: linear-gradient(180deg, #241005, #120702);
-      border: 4px solid #eab308;
-      border-radius: 24px;
-      box-shadow: 0 0 55px rgba(234, 179, 8, 0.5), inset 0 0 35px rgba(0,0,0,0.9);
-      padding: 36px 48px;
-      max-width: 720px;
-      width: 100%;
       text-align: center;
-      color: #fef08a;
+      padding: 30px;
     }
-
-    .modal-title {
-      font-size: 46px;
-      color: #facc15;
-      text-shadow: 2px 2px 8px #000;
-      margin-bottom: 12px;
+    .btn-action {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 32px;
       font-weight: bold;
-    }
-
-    .modal-desc {
-      font-size: 24px;
-      color: #e2e8f0;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
-
-    .rules-list {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px dashed #eab308;
-      border-radius: 14px;
-      padding: 16px 24px;
-      margin-bottom: 24px;
-      text-align: left;
-      font-size: 22px;
-      color: #fde047;
-      line-height: 1.6;
-    }
-
-    .btn-ninja {
-      font-family: 'Times New Roman', Times, serif;
-      font-size: 28px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #facc15, #ca8a04);
-      color: #1a0802;
+      padding: 16px 50px;
+      background: #0284c7;
+      color: white;
       border: none;
-      padding: 14px 44px;
-      border-radius: 50px;
+      border-radius: 16px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(234, 179, 8, 0.6);
-      transition: all 0.2s ease;
-      display: inline-block;
+      margin-top: 30px;
+      box-shadow: 0 0 30px rgba(2, 132, 199, 0.6);
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: #0369a1;
+      transform: scale(1.05);
     }
 
-    .btn-ninja:hover {
-      transform: scale(1.06);
-      background: linear-gradient(135deg, #fef08a, #eab308);
-      box-shadow: 0 8px 30px rgba(250, 204, 21, 0.8);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin: 22px 0;
-    }
-
-    .stat-box {
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid #854d0e;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .stat-label {
-      font-size: 20px;
-      color: #94a3b8;
-    }
-
-    .stat-val {
-      font-size: 34px;
-      font-weight: bold;
-      color: #38bdf8;
-      margin-top: 4px;
+    /* CON TRỎ BÀN TAY NEON */
+    #hand-cursor {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 25px #38bdf8, 0 0 50px #0284c7;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      display: none;
+      transition: transform 0.05s ease-out;
     }
   </style>
 </head>
 <body>
 
-  <div id="game-container">
-    <!-- Camera ngầm xử lý ngón tay -->
-    <video id="webcam" playsinline autoplay></video>
-    <canvas id="gameCanvas"></canvas>
+  <!-- VIDEO WEBCAM NỀN -->
+  <video id="webcam-bg" autoplay playsinline muted></video>
 
-    <!-- Top Heads-Up Display -->
-    <div class="hud-overlay">
-      <div class="top-stats-row">
-        <div class="stat-pill" id="score-box">⭐ Điểm: 0</div>
-        <div class="timer-pill" id="timer-box">⏱ 15s</div>
-        <div class="stat-pill" id="progress-box">Tiến độ: 1 / 25</div>
-        <div class="stat-pill lives-box" id="lives-display">❤❤❤</div>
-      </div>
+  <!-- CANVAS CHÉM TRÁI CÂY -->
+  <canvas id="game-canvas"></canvas>
 
-      <!-- Bảng nhiệm vụ mục tiêu -->
-      <div class="mission-board" id="mission-board">
-        <div class="mission-header">⚔️ NHIỆM VỤ: DÙNG TAY CHÉM TRÁI CÂY CÓ NGHĨA ⚔️</div>
-        <div class="mission-vietnamese" id="target-meaning">Đang chuẩn bị từ vựng...</div>
-        <div class="mission-phonetics" id="target-phonetic">/.../</div>
-      </div>
+  <!-- ĐIỂM CHỈ TAY NEON THEO NGÓN TAY -->
+  <div id="hand-cursor"></div>
 
-      <div class="hand-status-badge" id="hand-status">
-        🖐 Đang kết nối Webcam & AI Hand Tracking...
-      </div>
-    </div>
+  <!-- HUD TRÊN CÙNG -->
+  <div class="hud-bar">
+    <div class="hud-badge" id="hud-progress">Từ: 1 / 25</div>
+    <div class="timer-badge" id="hud-timer">⏱ 15s</div>
+    <div class="hud-badge" id="hud-score">Điểm: 0 ⭐</div>
+  </div>
 
-    <!-- Celebration floating banner -->
-    <div id="combo-popup">+100 CHÍNH XÁC! 🔥</div>
+  <!-- BẢNG NHIỆM VỤ NGHĨA TIẾNG VIỆT -->
+  <div class="mission-card">
+    <div class="mission-label">🎯 HÃY CHÉM TRÁI CÂY CÓ TỪ NGHĨA LÀ:</div>
+    <div class="mission-vn" id="target-vn">...</div>
+    <div class="mission-ipa" id="target-ipa">...</div>
+  </div>
 
-    <!-- Màn hình Khởi động Game -->
-    <div class="modal-backdrop" id="start-modal">
-      <div class="modal-card">
-        <div class="modal-title">🗡️ AI NINJA TỪ VỰNG 🍉</div>
-        <div class="modal-desc">Game chém hoa quả bằng bàn tay trước ống kính camera laptop</div>
-        <div class="rules-list">
-          🖐 <b>Tương tác bằng tay:</b> Giơ bàn tay trước webcam, di chuyển ngón tay để tạo lưỡi kiếm katana ánh sáng chém quả!<br>
-          ⏱ <b>Thời gian thoải mái:</b> Mỗi lượt kéo dài <b>ít nhất 15 giây</b>, quả bay bay chậm rãi (slow-motion) cho sinh viên kịp đọc từ.<br>
-          🎯 <b>Nhiệm vụ:</b> Quan sát nghĩa tiếng Việt và phiên âm ở trên, vung tay chém đúng quả mang từ tiếng Anh tương ứng!<br>
-          ❌ Chém nhầm từ sai sẽ bị trừ 1 mạng (tối đa 3 mạng).<br>
-          <i>(Hệ thống có hỗ trợ vuốt chuột/cảm ứng nếu phòng học không có webcam).</i>
-        </div>
-        <button class="btn-ninja" onclick="initAndStartGame()">BẬT CAMERA & CHÉM NGAY 🚀</button>
-      </div>
-    </div>
+  <!-- MÀN HÌNH BẮT ĐẦU -->
+  <div id="start-modal">
+    <h1 style="font-size: 50px; color: #38bdf8; margin-bottom: 20px;">⚔️ AI MOTION FRUIT NINJA ⚔️</h1>
+    <p style="font-size: 26px; max-width: 800px; line-height: 1.6; color: #cbd5e1;">
+      🍉 <b>Luật chơi:</b><br>
+      👉 Đứng trước camera, giơ ngón tay trỏ lên để xuất hiện vệt kiếm Katana.<br>
+      ⏱ Mỗi đợt có <b>ít nhất 15 giây</b>, 5 trái cây sẽ bay chậm rãi.<br>
+      🗡 Vung tay chém đúng trái cây có từ tiếng Anh ứng với nghĩa tiếng Việt!<br>
+      <i>(Hỗ trợ cả di chuột/vuốt màn hình nếu camera chưa kịp nhận bàn tay)</i>
+    </p>
+    <button class="btn-action" onclick="startGame()">BẬT CAMERA & BẮT ĐẦU 🚀</button>
+  </div>
 
-    <!-- Màn hình Kết thúc Game -->
-    <div class="modal-backdrop" id="end-modal" style="display: none;">
-      <div class="modal-card">
-        <div class="modal-title" id="end-title">🏆 CHIẾN THẮNG!</div>
-        <div class="modal-desc" id="end-subtitle">Bạn đã xuất sắc chinh phục trọn vẹn 25 từ vựng!</div>
-        
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-label">Tổng Điểm</div>
-            <div class="stat-val" id="final-score" style="color: #facc15;">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Từ Đã Chém Đúng</div>
-            <div class="stat-val" id="final-completed" style="color: #4ade80;">0 / 25</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Chuỗi Combo Tối Đa</div>
-            <div class="stat-val" id="final-max-combo" style="color: #fb923c;">0 🔥</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Độ Chính Xác</div>
-            <div class="stat-val" id="final-accuracy" style="color: #38bdf8;">100%</div>
-          </div>
-        </div>
-
-        <button class="btn-ninja" onclick="restartGame()">CHƠI LẠI TỪ ĐẦU 🔄</button>
-      </div>
-    </div>
+  <!-- MÀN HÌNH TỔNG KẾT -->
+  <div id="end-modal" style="display: none;">
+    <h1 style="font-size: 52px; color: #facc15; margin-bottom: 15px;">🏆 XUẤT SẮC HOÀN THÀNH!</h1>
+    <p style="font-size: 28px; color: #94a3b8; margin-bottom: 25px;">Em đã xuất sắc chinh phục trọn bộ 25 từ vựng Sức Khỏe!</p>
+    <div style="font-size: 32px; color: #38bdf8; margin: 15px 0;">⭐ Tổng Điểm: <b id="final-score">0</b></div>
+    <button class="btn-action" onclick="restartGame()">CHƠI LẠI TỪ ĐẦU 🔄</button>
   </div>
 
   <script>
-    // 25 TỪ VỰNG CHUẨN TỪ ẢNH CỦA BẠN
-    const VOCABULARY_LIST = [
-      { id: 1, word: "healthy living", ipa: "/,helθi 'lɪvɪŋ/", type: "n.phr", vi: "lối sống lành mạnh" },
-      { id: 2, word: "schoolwork", ipa: "/'sku:lwɜ:k/", type: "n", vi: "việc học ở trường" },
-      { id: 3, word: "physical health", ipa: "/,fɪzɪkl 'helθ/", type: "n.phr", vi: "sức khỏe thể chất" },
-      { id: 4, word: "mental health", ipa: "/,mentl 'helθ/", type: "n.phr", vi: "sức khỏe tinh thần" },
-      { id: 5, word: "well-balanced life", ipa: "/,wel 'bælənst laɪf/", type: "n.phr", vi: "cuộc sống cân bằng" },
-      { id: 6, word: "school counsellor", ipa: "/sku:l 'kaʊnsələ(r)/", type: "n.phr", vi: "tư vấn viên học đường" },
-      { id: 7, word: "counsellor", ipa: "/'kaʊnsələ(r)/", type: "n", vi: "người tư vấn" },
-      { id: 8, word: "session", ipa: "/'seʃn/", type: "n", vi: "buổi học / buổi tư vấn" },
-      { id: 9, word: "stress", ipa: "/stres/", type: "n", vi: "sự căng thẳng" },
-      { id: 10, word: "schedule", ipa: "/'ʃedju:l/", type: "n", vi: "lịch trình, thời khóa biểu" },
-      { id: 11, word: "priority", ipa: "/praɪ'ɒrəti/", type: "n", vi: "sự ưu tiên" },
-      { id: 12, word: "home gym", ipa: "/həʊm dʒɪm/", type: "n.phr", vi: "phòng tập tại nhà" },
-      { id: 13, word: "due date", ipa: "/'dju: deɪt/", type: "n.phr", vi: "hạn nộp, ngày đến hạn" },
-      { id: 14, word: "optimistic", ipa: "/,ɒptɪ'mɪstɪk/", type: "adj", vi: "lạc quan" },
-      { id: 15, word: "stressed out", ipa: "/strest aʊt/", type: "adj", vi: "căng thẳng, kiệt sức vì áp lực" },
-      { id: 16, word: "distraction", ipa: "/dɪ'strækʃn/", type: "n", vi: "sự xao nhãng" },
-      { id: 17, word: "difficulty", ipa: "/'dɪfɪkəlti/", type: "n", vi: "khó khăn" },
-      { id: 18, word: "celebrity", ipa: "/sə'lebrəti/", type: "n", vi: "người nổi tiếng" },
-      { id: 19, word: "anxiety", ipa: "/æŋ'zaɪəti/", type: "n", vi: "sự lo âu" },
-      { id: 20, word: "properly", ipa: "/'prɒpəli/", type: "adv", vi: "đúng cách, hợp lí" },
-      { id: 21, word: "busy schedule", ipa: "/'bɪzi 'ʃedju:l/", type: "n.phr", vi: "lịch trình bận rộn" },
-      { id: 22, word: "additional support", ipa: "/ə'dɪʃənl sə'pɔ:t/", type: "n.phr", vi: "sự hỗ trợ thêm" },
-      { id: 23, word: "appropriately", ipa: "/ə'prəʊpriətli/", type: "adv", vi: "một cách phù hợp" },
-      { id: 24, word: "mood", ipa: "/mu:d/", type: "n", vi: "tâm trạng" },
-      { id: 25, word: "fattening food", ipa: "/'fætnɪŋ fu:d/", type: "n.phr", vi: "đồ ăn dễ gây béo" }
+    // 25 TỪ VỰNG CHUẨN TỪ ẢNH
+    const vocabList = [
+      { id: 1, word: "healthy living", ipa: "/ˌhelθi ˈlɪvɪŋ/", pos: "n.phr", vn: "lối sống lành mạnh" },
+      { id: 2, word: "schoolwork", ipa: "/ˈskuːlwɜːk/", pos: "n", vn: "việc học ở trường" },
+      { id: 3, word: "physical health", ipa: "/ˌfɪzɪkl ˈhelθ/", pos: "n.phr", vn: "sức khỏe thể chất" },
+      { id: 4, word: "mental health", ipa: "/ˌmentl ˈhelθ/", pos: "n.phr", vn: "sức khỏe tinh thần" },
+      { id: 5, word: "well-balanced life", ipa: "/ˌwel ˈbælənst laɪf/", pos: "n.phr", vn: "cuộc sống cân bằng" },
+      { id: 6, word: "school counsellor", ipa: "/skuːl ˈkaʊnsələ(r)/", pos: "n.phr", vn: "tư vấn viên học đường" },
+      { id: 7, word: "counsellor", ipa: "/ˈkaʊnsələ(r)/", pos: "n", vn: "người tư vấn" },
+      { id: 8, word: "session", ipa: "/ˈseʃn/", pos: "n", vn: "buổi học / buổi tư vấn" },
+      { id: 9, word: "stress", ipa: "/stres/", pos: "n", vn: "sự căng thẳng" },
+      { id: 10, word: "schedule", ipa: "/ˈʃedjuːl/", pos: "n", vn: "lịch trình, thời khóa biểu" },
+      { id: 11, word: "priority", ipa: "/praɪˈɒrəti/", pos: "n", vn: "sự ưu tiên" },
+      { id: 12, word: "home gym", ipa: "/həʊm dʒɪm/", pos: "n.phr", vn: "phòng tập tại nhà" },
+      { id: 13, word: "due date", ipa: "/ˈdjuː deɪt/", pos: "n.phr", vn: "hạn nộp, ngày đến hạn" },
+      { id: 14, word: "optimistic", ipa: "/ˌɒptɪˈmɪstɪk/", pos: "adj", vn: "lạc quan" },
+      { id: 15, word: "stressed out", ipa: "/strest aʊt/", pos: "adj", vn: "căng thẳng, kiệt sức vì áp lực" },
+      { id: 16, word: "distraction", ipa: "/dɪˈstrækʃn/", pos: "n", vn: "sự xao nhãng" },
+      { id: 17, word: "difficulty", ipa: "/ˈdɪfɪkəlti/", pos: "n", vn: "khó khăn" },
+      { id: 18, word: "celebrity", ipa: "/səˈlebrəti/", pos: "n", vn: "người nổi tiếng" },
+      { id: 19, word: "anxiety", ipa: "/æŋˈzaɪəti/", pos: "n", vn: "sự lo âu" },
+      { id: 20, word: "properly", ipa: "/ˈprɒpəli/", pos: "adv", vn: "đúng cách, hợp lí" },
+      { id: 21, word: "busy schedule", ipa: "/ˈbɪzi ˈʃedjuːl/", pos: "n.phr", vn: "lịch trình bận rộn" },
+      { id: 22, word: "additional support", ipa: "/əˈdɪʃənl səˈpɔːt/", pos: "n.phr", vn: "sự hỗ trợ thêm" },
+      { id: 23, word: "appropriately", ipa: "/əˈprəʊpriətli/", pos: "adv", vn: "một cách phù hợp" },
+      { id: 24, word: "mood", ipa: "/muːd/", pos: "n", vn: "tâm trạng" },
+      { id: 25, word: "fattening food", ipa: "/ˈfætnɪŋ fuːd/", pos: "n.phr", vn: "đồ ăn dễ gây béo" }
     ];
 
-    // CÁC LOẠI HOA QUẢ TRỰC QUAN
-    const FRUIT_SKINS = [
-      { name: "Watermelon", skin: "#15803d", flesh: "#ef4444", juice: "#dc2626", seed: "#18181b", radius: 72 },
-      { name: "Orange", skin: "#c2410c", flesh: "#f97316", juice: "#ea580c", seed: "#fed7aa", radius: 66 },
-      { name: "Apple", skin: "#b91c1c", flesh: "#fef08a", juice: "#ef4444", seed: "#451a03", radius: 64 },
-      { name: "Kiwi", skin: "#78350f", flesh: "#84cc16", juice: "#65a30d", seed: "#171717", radius: 62 },
-      { name: "Pineapple", skin: "#854d0e", flesh: "#facc15", juice: "#eab308", seed: "#ca8a04", radius: 70 },
-      { name: "Dragonfruit", skin: "#be185d", flesh: "#fdf2f8", juice: "#db2777", seed: "#09090b", radius: 68 },
-      { name: "Coconut", skin: "#451a03", flesh: "#ffffff", juice: "#f8fafc", seed: "#78350f", radius: 68 }
+    const fruitColors = [
+      { fill: "#ef4444", border: "#f87171", icon: "🍉" }, // Dưa hấu
+      { fill: "#f97316", border: "#fb923c", icon: "🍊" }, // Cam
+      { fill: "#84cc16", border: "#a3e635", icon: "🍏" }, // Táo xanh
+      { fill: "#eab308", border: "#fde047", icon: "🍍" }, // Dứa
+      { fill: "#a855f7", border: "#c084fc", icon: "🍇" }  // Nho
     ];
 
-    // BỘ PHÁT ÂM THANH WEB AUDIO SYNTHESIZER
-    const AudioEngine = {
-      ctx: null,
-      init() {
-        if (!this.ctx) {
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (AudioContextClass) this.ctx = new AudioContextClass();
-        }
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-      },
-      playSwoosh() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(480, now);
-        osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.13);
-      },
-      playCorrectSlice() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + i * 0.05);
-          gain.gain.setValueAtTime(0.3, now + i * 0.05);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.28);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(now + i * 0.05);
-          osc.stop(now + i * 0.05 + 0.3);
-        });
-      },
-      playWrongBuzz() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(170, now);
-        osc.frequency.linearRampToValueAtTime(110, now + 0.26);
-        gain.gain.setValueAtTime(0.35, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.26);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.27);
-      },
-      playVictory() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [523.25, 659.25, 783.99, 1046.50, 1318.5].forEach((freq, idx) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.11);
-          gain.gain.setValueAtTime(0.22, now + idx * 0.11);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.4);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(now + idx * 0.11);
-          osc.stop(now + idx * 0.11 + 0.45);
-        });
-      }
-    };
+    let canvas, ctx;
+    let currentIdx = 0;
+    let score = 0;
+    let activeFruits = [];
+    let particles = [];
+    let bladeTrail = []; // Danh sách tọa độ lưỡi kiếm
+    let currentHandPos = { x: -100, y: -100, active: false };
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const video = document.getElementById('webcam');
+    let roundTimer = 15;
+    let timerInterval = null;
+    let isRoundActive = false;
 
-    let width = 0;
-    let height = 0;
+    // KHỞI ĐỘNG GAME & WEBCAM
+    async function startGame() {
+      document.getElementById('start-modal').style.display = 'none';
+      canvas = document.getElementById('game-canvas');
+      ctx = canvas.getContext('2d');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      initAudio();
+      setupMouseFallback();
+      await initMediaPipeHands();
+
+      currentIdx = 0;
+      score = 0;
+      startRound();
+      requestAnimationFrame(gameLoop);
+    }
 
     function resizeCanvas() {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    /* Vệt kiếm đao ánh sáng Katana */
-    const bladePoints = [];
-    let lastSwipeSoundTime = 0;
-
-    function addBladePoint(x, y) {
-      const now = performance.now();
-      bladePoints.push({ x, y, time: now });
-
-      if (now - lastSwipeSoundTime > 150) {
-        AudioEngine.playSwoosh();
-        lastSwipeSoundTime = now;
-      }
-      checkFruitSlice(x, y);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
 
-    function trimBladePoints() {
-      const now = performance.now();
-      while (bladePoints.length > 0 && now - bladePoints[0].time > 180) {
-        bladePoints.shift();
-      }
-    }
+    // KHỞI TẠO MEDIAPIPE HANDS ĐÃ FIX KHÔNG BỊ TREO/ĐỨNG
+    async function initMediaPipeHands() {
+      const videoElement = document.getElementById('webcam-bg');
 
-    // TÍCH HỢP MEDIAPIPE HANDS
-    let handDetector = null;
-    let cameraUtil = null;
-    let isHandPresent = false;
-    let handTipPos = null;
-
-    function initMediaPipe() {
-      handDetector = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
       });
 
-      handDetector.setOptions({
+      hands.setOptions({
         maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.55,
-        minTrackingConfidence: 0.55
+        modelComplexity: 0, // Dùng model nhẹ để không giật lag
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
       });
 
-      handDetector.onResults(onHandResults);
+      // Nhận diện liên tục mỗi khi có kết quả
+      hands.onResults((results) => {
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+          const landmarks = results.multiHandLandmarks[0];
+          const tip = landmarks[8]; // Ngón tay trỏ (Index Finger Tip)
 
-      cameraUtil = new Camera(video, {
-        onFrame: async () => {
-          await handDetector.send({ image: video });
-        },
-        width: 1280,
-        height: 720
-      });
+          // Lật gương X: vì webcam lật gương (scaleX(-1)), nên tọa độ hiển thị x = (1 - tip.x) * width
+          const targetX = (1 - tip.x) * canvas.width;
+          const targetY = tip.y * canvas.height;
 
-      cameraUtil.start()
-        .then(() => {
-          document.getElementById('hand-status').innerText = "🖐 SẴN SÀNG: Vung bàn tay trước camera để chém quả!";
-          document.getElementById('hand-status').style.color = "#4ade80";
-        })
-        .catch((err) => {
-          console.warn("Webcam không khả dụng hoặc bị từ chối:", err);
-          document.getElementById('hand-status').innerText = "🖱 Chế độ dự phòng: Dùng chuột hoặc chạm màn hình để chém!";
-          document.getElementById('hand-status').style.color = "#facc15";
-        });
-    }
+          // Cập nhật tọa độ mượt mà
+          currentHandPos.x = targetX;
+          currentHandPos.y = targetY;
+          currentHandPos.active = true;
 
-    function onHandResults(results) {
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        isHandPresent = true;
-        document.getElementById('hand-status').innerText = "⚔️ ĐÃ PHÁT HIỆN BÀN TAY - HÃY VUNG CHÉM QUẢ!";
-        document.getElementById('hand-status').style.color = "#38bdf8";
+          // Hiện điểm con trỏ bàn tay neon
+          const cursor = document.getElementById('hand-cursor');
+          cursor.style.display = 'block';
+          cursor.style.left = targetX + 'px';
+          cursor.style.top = targetY + 'px';
 
-        const landmarks = results.multiHandLandmarks[0];
-        // Điểm đầu ngón trỏ landmark 8
-        const indexTip = landmarks[8];
-
-        // Lật gương (1 - x) để trùng hướng tay của người dùng khi nhìn vào màn hình
-        const screenX = (1 - indexTip.x) * width;
-        const screenY = indexTip.y * height;
-
-        handTipPos = { x: screenX, y: screenY };
-        addBladePoint(screenX, screenY);
-      } else {
-        isHandPresent = false;
-        handTipPos = null;
-      }
-    }
-
-    /* Fallback chuột & cảm ứng màn hình */
-    let isMouseDown = false;
-    canvas.addEventListener('mousedown', (e) => {
-      isMouseDown = true;
-      AudioEngine.init();
-      addBladePoint(e.clientX, e.clientY);
-    });
-    window.addEventListener('mouseup', () => { isMouseDown = false; });
-    canvas.addEventListener('mousemove', (e) => {
-      if (isMouseDown) addBladePoint(e.clientX, e.clientY);
-    });
-
-    canvas.addEventListener('touchstart', (e) => {
-      isMouseDown = true;
-      AudioEngine.init();
-      const t = e.touches[0];
-      addBladePoint(t.clientX, t.clientY);
-    }, { passive: false });
-    window.addEventListener('touchend', () => { isMouseDown = false; });
-    canvas.addEventListener('touchmove', (e) => {
-      if (isMouseDown && e.touches.length > 0) {
-        const t = e.touches[0];
-        addBladePoint(t.clientX, t.clientY);
-      }
-    }, { passive: false });
-
-    /* LỚP HẠT NƯỚC ÉP BẮN TÓE */
-    class Particle {
-      constructor(x, y, color, size, vx, vy) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.size = size;
-        this.vx = vx;
-        this.vy = vy;
-        this.alpha = 1;
-        this.decay = Math.random() * 0.02 + 0.015;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += 0.15; // trọng lực nhẹ
-        this.alpha -= this.decay;
-      }
-      draw(c) {
-        c.save();
-        c.globalAlpha = Math.max(0, this.alpha);
-        c.fillStyle = this.color;
-        c.beginPath();
-        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        c.fill();
-        c.restore();
-      }
-    }
-
-    /* LỚP NỬA QUẢ BỊ CHÉM ĐÔI */
-    class HalfFruit {
-      constructor(x, y, fruitData, isLeft, sliceAngle) {
-        this.x = x;
-        this.y = y;
-        this.skin = fruitData.skin;
-        this.flesh = fruitData.flesh;
-        this.radius = fruitData.radius;
-        this.isLeft = isLeft;
-        this.rotation = sliceAngle;
-        this.vRot = (isLeft ? -1 : 1) * (Math.random() * 0.05 + 0.02);
-        const impulse = 3 + Math.random() * 3;
-        const pushAngle = sliceAngle + (isLeft ? -Math.PI / 2 : Math.PI / 2);
-        this.vx = Math.cos(pushAngle) * impulse + (isLeft ? -2 : 2);
-        this.vy = Math.sin(pushAngle) * impulse - 1.5;
-        this.gravity = 0.22; // Rơi chậm rãi
-        this.alpha = 1;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += this.gravity;
-        this.rotation += this.vRot;
-        if (this.y > height + 100) this.alpha = 0;
-      }
-      draw(c) {
-        c.save();
-        c.translate(this.x, this.y);
-        c.rotate(this.rotation);
-        c.beginPath();
-        if (this.isLeft) {
-          c.arc(0, 0, this.radius, Math.PI / 2, -Math.PI / 2, false);
+          // Đưa vào vệt kiếm
+          bladeTrail.push({ x: targetX, y: targetY, time: performance.now() });
         } else {
-          c.arc(0, 0, this.radius, -Math.PI / 2, Math.PI / 2, false);
+          currentHandPos.active = false;
         }
-        c.closePath();
-        c.fillStyle = this.flesh;
-        c.fill();
-        c.lineWidth = 6;
-        c.strokeStyle = this.skin;
-        c.stroke();
-        c.restore();
-      }
+      });
+
+      // Bật camera thông qua CameraUtils
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await hands.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
     }
 
-    /* LỚP TRÁI CÂY NGUYÊN BẢN CHUYỂN ĐỘNG CHẬM (SLOW MOTION) */
-    class SlowFruit {
-      constructor(vocabItem, isTarget, skinData, spawnIndex, totalSpawns) {
-        this.vocab = vocabItem;
-        this.isTarget = isTarget;
-        this.skinData = skinData;
-        this.radius = skinData.radius;
-        this.isSliced = false;
+    // CHUỘT DỰ PHÒNG LIÊN TỤC
+    function setupMouseFallback() {
+      window.addEventListener('mousemove', (e) => {
+        currentHandPos.x = e.clientX;
+        currentHandPos.y = e.clientY;
+        currentHandPos.active = true;
 
-        // Trải đều 5 vị trí theo chiều ngang
-        const segment = width / (totalSpawns + 1);
-        this.x = segment * (spawnIndex + 1) + (Math.random() * 30 - 15);
-        this.y = height + this.radius + 20;
+        const cursor = document.getElementById('hand-cursor');
+        cursor.style.display = 'block';
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
 
-        // QUỸ ĐẠO BAY CHẬM RÃI (SLOW-MOTION):
-        // Điểm rơi cao nhất (apex) ở 30% - 45% chiều cao màn hình
-        const targetApexY = height * 0.32 + Math.random() * (height * 0.15);
-        // Trọng lực cực nhẹ 0.14 để quả lơ lửng trên không trung lâu hơn
-        const slowGravity = 0.13;
-        this.gravity = slowGravity;
-
-        // Vận tốc phóng ban đầu
-        this.vy = -Math.sqrt(2 * slowGravity * (this.y - targetApexY));
-        const timeToApex = -this.vy / slowGravity;
-        
-        // Vận tốc ngang nhẹ nhàng hướng về trung tâm
-        const targetX = width * 0.5 + (Math.random() * 300 - 150);
-        this.vx = (targetX - this.x) / (timeToApex * 2.2);
-
-        this.rotation = Math.random() * Math.PI * 2;
-        this.rotSpeed = (Math.random() - 0.5) * 0.02; // Quay chậm
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += this.gravity;
-        this.rotation += this.rotSpeed;
-      }
-
-      draw(c) {
-        if (this.isSliced) return;
-        c.save();
-        c.translate(this.x, this.y);
-        c.rotate(this.rotation);
-
-        // Vỏ ngoài & bóng đổ
-        c.shadowColor = 'rgba(0,0,0,0.55)';
-        c.shadowBlur = 18;
-        c.beginPath();
-        c.arc(0, 0, this.radius, 0, Math.PI * 2);
-        c.fillStyle = this.skinData.skin;
-        c.fill();
-        c.shadowBlur = 0;
-
-        // Ruột quả
-        c.beginPath();
-        c.arc(0, 0, this.radius - 8, 0, Math.PI * 2);
-        c.fillStyle = this.skinData.flesh;
-        c.fill();
-
-        // Hạt quả
-        c.fillStyle = this.skinData.seed;
-        for (let i = 0; i < 4; i++) {
-          const a = (i * Math.PI) / 2;
-          c.beginPath();
-          c.arc(Math.cos(a) * (this.radius * 0.4), Math.sin(a) * (this.radius * 0.4), 3, 0, Math.PI * 2);
-          c.fill();
-        }
-
-        // BẢNG TỪ TIẾNG ANH (luôn xoay ngang để học sinh đọc rõ mồn một)
-        c.rotate(-this.rotation);
-        const textWidth = Math.max(160, this.vocab.word.length * 16 + 26);
-        
-        c.fillStyle = 'rgba(15, 23, 42, 0.94)';
-        c.strokeStyle = '#facc15';
-        c.lineWidth = 3;
-        c.beginPath();
-        c.roundRect(-textWidth / 2, -28, textWidth, 56, 14);
-        c.fill();
-        c.stroke();
-
-        // Chữ tiếng Anh
-        c.fillStyle = '#ffffff';
-        c.font = 'bold 24px "Times New Roman", serif';
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        c.fillText(this.vocab.word, 0, 0);
-
-        c.restore();
-      }
+        bladeTrail.push({ x: e.clientX, y: e.clientY, time: performance.now() });
+      });
     }
 
-    let currentWaveFruits = [];
-    let activeParticles = [];
-    let halfFruits = [];
-
-    let targetQueue = [];
-    let currentTargetIndex = 0;
-    let currentTarget = null;
-
-    let score = 0;
-    let lives = 3;
-    let combo = 0;
-    let maxCombo = 0;
-    let correctSlices = 0;
-    let totalAttempts = 0;
-    let isGameOver = false;
-
-    // BỘ ĐẾM 15 GIÂY CHO MỖI CÂU
-    let waveSecondsLeft = 15;
-    let waveCountdownInterval = null;
-    let waveSpawnTimeout = null;
-
-    function initGameOrder() {
-      // Xáo trộn ngẫu nhiên 25 từ vựng
-      targetQueue = [...VOCABULARY_LIST].sort(() => Math.random() - 0.5);
-      currentTargetIndex = 0;
-      score = 0;
-      lives = 3;
-      combo = 0;
-      maxCombo = 0;
-      correctSlices = 0;
-      totalAttempts = 0;
-      isGameOver = false;
-      currentWaveFruits = [];
-      activeParticles = [];
-      halfFruits = [];
-      updateUI();
-    }
-
-    function updateUI() {
-      document.getElementById('score-box').innerText = `⭐ Điểm: ${score}`;
-      document.getElementById('progress-box').innerText = `Tiến độ: ${currentTargetIndex + 1} / 25`;
-      document.getElementById('lives-display').innerText = '❤'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
-
-      if (currentTarget) {
-        document.getElementById('target-meaning').innerText = `${currentTarget.vi} (${currentTarget.type})`;
-        document.getElementById('target-phonetic').innerText = `${currentTarget.ipa}`;
-        
-        const board = document.getElementById('mission-board');
-        board.classList.remove('bounce');
-        void board.offsetWidth;
-        board.classList.add('bounce');
-      }
-    }
-
-    // BẮT ĐẦU ĐỢT QUẢ VỚI BỘ ĐẾM 15 GIÂY
-    function spawnFruitWave() {
-      if (isGameOver) return;
-      if (currentTargetIndex >= targetQueue.length) {
-        triggerVictory();
+    // BẮT ĐẦU MỖI ĐỢT: 5 TRÁI CÂY BAY CHẬM RÃI (15 GIÂY)
+    function startRound() {
+      if (currentIdx >= vocabList.length) {
+        showEndGame();
         return;
       }
 
-      currentTarget = targetQueue[currentTargetIndex];
-      updateUI();
+      isRoundActive = true;
+      activeFruits = [];
+      const currentVocab = vocabList[currentIdx];
 
-      // Chọn 4 từ sai gây nhiễu
-      const candidates = VOCABULARY_LIST.filter(v => v.id !== currentTarget.id);
-      candidates.sort(() => Math.random() - 0.5);
-      const distractors = candidates.slice(0, 4);
+      // Cập nhật bảng nhiệm vụ
+      document.getElementById('hud-progress').innerText = `Từ: ${currentIdx + 1} / 25`;
+      document.getElementById('target-vn').innerText = `"${currentVocab.vn}"`;
+      document.getElementById('target-ipa').innerText = `${currentVocab.pos} • ${currentVocab.ipa}`;
 
-      // Đúng 5 từ cho đợt này
-      const waveWords = [currentTarget, ...distractors].sort(() => Math.random() - 0.5);
-      const shuffledSkins = [...FRUIT_SKINS].sort(() => Math.random() - 0.5);
+      // Tạo 1 trái cây ĐÚNG và 4 trái cây SAI
+      let wrongPool = vocabList.filter(item => item.id !== currentVocab.id);
+      wrongPool.sort(() => Math.random() - 0.5);
 
-      currentWaveFruits = [];
-      for (let i = 0; i < 5; i++) {
-        const item = waveWords[i];
-        const isTarget = (item.id === currentTarget.id);
-        const skin = shuffledSkins[i % shuffledSkins.length];
-        currentWaveFruits.push(new SlowFruit(item, isTarget, skin, i, 5));
-      }
+      let roundChoices = [
+        { text: currentVocab.word, isCorrect: true },
+        { text: wrongPool[0].word, isCorrect: false },
+        { text: wrongPool[1].word, isCorrect: false },
+        { text: wrongPool[2].word, isCorrect: false },
+        { text: wrongPool[3].word, isCorrect: false }
+      ];
+      // Xáo trộn vị trí 5 quả
+      roundChoices.sort(() => Math.random() - 0.5);
 
-      // THIẾT LẬP BỘ ĐẾM 15 GIÂY
-      clearInterval(waveCountdownInterval);
-      waveSecondsLeft = 15;
-      const timerBox = document.getElementById('timer-box');
-      timerBox.innerText = `⏱ ${waveSecondsLeft}s`;
-      timerBox.style.background = "rgba(69, 26, 3, 0.95)";
+      // Cho 5 quả cùng bay lên với vận tốc chậm (Slow-motion)
+      const slotWidth = canvas.width / 6;
+      roundChoices.forEach((choice, index) => {
+        const fruitVisual = fruitColors[index % fruitColors.length];
+        activeFruits.push({
+          x: slotWidth * (index + 1) + (Math.random() * 40 - 20),
+          y: canvas.height + 60,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -(canvas.height * 0.0135 + Math.random() * 1.5), // Lực đẩy vừa phải
+          gravity: 0.16, // Trọng lực rất nhẹ để bay lơ lửng lâu
+          radius: 65,
+          text: choice.text,
+          isCorrect: choice.isCorrect,
+          color: fruitVisual.fill,
+          border: fruitVisual.border,
+          icon: fruitVisual.icon,
+          isSliced: false,
+          sliceAlpha: 1
+        });
+      });
 
-      waveCountdownInterval = setInterval(() => {
-        if (isGameOver) {
-          clearInterval(waveCountdownInterval);
-          return;
+      // ĐẾM NGƯỢC 15 GIÂY
+      clearInterval(timerInterval);
+      roundTimer = 15;
+      const timerBadge = document.getElementById('hud-timer');
+      timerBadge.innerText = `⏱ ${roundTimer}s`;
+      timerBadge.style.background = "rgba(66, 32, 6, 0.9)";
+
+      timerInterval = setInterval(() => {
+        roundTimer--;
+        timerBadge.innerText = `⏱ ${roundTimer}s`;
+
+        if (roundTimer <= 4) {
+          timerBadge.style.background = "rgba(127, 29, 29, 0.9)";
         }
 
-        waveSecondsLeft--;
-        timerBox.innerText = `⏱ ${waveSecondsLeft}s`;
-
-        if (waveSecondsLeft <= 4) {
-          timerBox.style.background = "rgba(153, 27, 27, 0.95)"; // Đỏ cảnh báo
-        }
-
-        // HẾT 15 GIÂY MÀ CHƯA CHÉM TRÚNG TỪ ĐÚNG
-        if (waveSecondsLeft <= 0) {
-          clearInterval(waveCountdownInterval);
-          handlePenalty("Hết 15 giây mà chưa chém trúng từ đúng");
-          
-          // Tự động chuyển wave tiếp theo sau khi hết giờ
-          if (!isGameOver) {
-            clearTimeout(waveSpawnTimeout);
-            waveSpawnTimeout = setTimeout(() => {
-              currentWaveFruits = [];
-              spawnFruitWave();
-            }, 800);
-          }
+        if (roundTimer <= 0) {
+          clearInterval(timerInterval);
+          playBuzzSound();
+          // Hết giờ: tự động qua từ tiếp theo
+          nextRound();
         }
       }, 1000);
     }
 
-    // NẾU CẢ 5 QUẢ RƠI HẾT XUỐNG DƯỚI TRƯỚC KHI HẾT 15 GIÂY -> NẢY TIẾP ĐỢT MỚI
-    function checkWaveFallThrough() {
-      if (currentWaveFruits.length > 0) {
-        const allFallen = currentWaveFruits.every(f => f.isSliced || f.y > height + 160);
-        if (allFallen) {
-          const missedTarget = currentWaveFruits.some(f => f.isTarget && !f.isSliced);
-          if (missedTarget && waveSecondsLeft > 0) {
-            // Cho quả nảy lên lại nếu vẫn còn thời gian trong 15s để học sinh tiếp tục thử
-            respawnRemainingWave();
-          }
-        }
-      }
-    }
-
-    // Tái xuất hiện quả còn lại để tận dụng hết 15 giây suy nghĩ
-    function respawnRemainingWave() {
-      const remainingUncut = currentWaveFruits.filter(f => !f.isSliced);
-      if (remainingUncut.length === 0) return;
-
-      currentWaveFruits = [];
-      const shuffledSkins = [...FRUIT_SKINS].sort(() => Math.random() - 0.5);
-
-      remainingUncut.forEach((oldFruit, i) => {
-        const skin = shuffledSkins[i % shuffledSkins.length];
-        currentWaveFruits.push(new SlowFruit(oldFruit.vocab, oldFruit.isTarget, skin, i, remainingUncut.length));
-      });
-    }
-
-    // KIỂM TRA CHÉM TRÚNG QUẢ BẰNG ĐOẠN ĐƯỜNG KIẾM (LINE SEGMENT TO CIRCLE)
-    function checkFruitSlice(x, y) {
-      if (bladePoints.length < 2 || isGameOver) return;
-      const p1 = bladePoints[bladePoints.length - 2];
-      const p2 = bladePoints[bladePoints.length - 1];
-
-      for (let i = 0; i < currentWaveFruits.length; i++) {
-        const fruit = currentWaveFruits[i];
-        if (fruit.isSliced) continue;
-
-        const dist = distToSegment({ x: fruit.x, y: fruit.y }, p1, p2);
-        if (dist < fruit.radius) {
-          sliceFruit(fruit, p1, p2);
-          break;
-        }
-      }
-    }
-
-    function distToSegment(p, v, w) {
-      const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
-      if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
-      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-      t = Math.max(0, Math.min(1, t));
-      return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
-    }
-
-    // HÀNH ĐỘNG CHÉM ĐÔI QUẢ
-    function sliceFruit(fruit, p1, p2) {
-      fruit.isSliced = true;
-      totalAttempts++;
-      const sliceAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-      // Thêm 2 nửa quả tách rời
-      halfFruits.push(new HalfFruit(fruit.x, fruit.y, fruit.skinData, true, sliceAngle));
-      halfFruits.push(new HalfFruit(fruit.x, fruit.y, fruit.skinData, false, sliceAngle));
-
-      // Hạt nước ép bắn tung tóe
-      for (let i = 0; i < 26; i++) {
-        const speed = Math.random() * 8 + 3;
-        const pAngle = Math.random() * Math.PI * 2;
-        const color = Math.random() > 0.4 ? fruit.skinData.juice : fruit.skinData.flesh;
-        activeParticles.push(new Particle(
-          fruit.x,
-          fruit.y,
-          color,
-          Math.random() * 5 + 3,
-          Math.cos(pAngle) * speed,
-          Math.sin(pAngle) * speed
-        ));
-      }
-
-      if (fruit.isTarget) {
-        // CHÉM ĐÚNG TỪ TIẾNG ANH!
-        clearInterval(waveCountdownInterval);
-        AudioEngine.playCorrectSlice();
-        score += 100 + (combo * 20);
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        correctSlices++;
-
-        showComboCelebration(`+${100 + (combo - 1) * 20} CHÍNH XÁC! 🔥 x${combo}`);
-
-        // Chuyển sang từ tiếp theo
-        currentTargetIndex++;
-        updateUI();
-
-        clearTimeout(waveSpawnTimeout);
-        waveSpawnTimeout = setTimeout(() => {
-          currentWaveFruits = [];
-          if (currentTargetIndex < targetQueue.length) {
-            spawnFruitWave();
-          } else {
-            triggerVictory();
-          }
-        }, 900);
-      } else {
-        // CHÉM NHẦM TỪ SAI!
-        AudioEngine.playWrongBuzz();
-        handlePenalty(`Chém nhầm từ: ${fruit.vocab.word}`);
-      }
-    }
-
-    function handlePenalty(reason) {
-      lives--;
-      combo = 0;
-      updateUI();
-      triggerScreenShake();
-
-      if (lives <= 0) {
-        triggerGameOver();
-      }
-    }
-
-    function showComboCelebration(text) {
-      const popup = document.getElementById('combo-popup');
-      popup.innerText = text;
-      popup.style.opacity = '1';
-      popup.style.transform = 'translate(-50%, -50%) scale(1.15)';
+    function nextRound() {
+      isRoundActive = false;
       setTimeout(() => {
-        popup.style.opacity = '0';
-        popup.style.transform = 'translate(-50%, -50%) scale(0.6)';
-      }, 750);
+        currentIdx++;
+        startRound();
+      }, 1200);
     }
 
-    let shakeEndTime = 0;
-    function triggerScreenShake() {
-      shakeEndTime = performance.now() + 280;
-    }
-
-    function triggerVictory() {
-      isGameOver = true;
-      clearInterval(waveCountdownInterval);
-      AudioEngine.playVictory();
-      document.getElementById('end-title').innerText = '🏆 NINJA THẦN TỐC! CHIẾN THẮNG!';
-      document.getElementById('end-subtitle').innerText = 'Chúc mừng bạn đã chém thành công toàn bộ 25 từ vựng sức khỏe!';
-      showEndModal();
-    }
-
-    function triggerGameOver() {
-      isGameOver = true;
-      clearInterval(waveCountdownInterval);
-      AudioEngine.playWrongBuzz();
-      document.getElementById('end-title').innerText = '💔 HẾT MẠNG RỒI!';
-      document.getElementById('end-subtitle').innerText = `Bạn đã chém đúng ${correctSlices} / 25 từ vựng. Cố gắng thêm nhé!`;
-      showEndModal();
-    }
-
-    function showEndModal() {
-      document.getElementById('final-score').innerText = `${score} PTS`;
-      document.getElementById('final-completed').innerText = `${correctSlices} / 25 từ`;
-      document.getElementById('final-max-combo').innerText = `${maxCombo} Combo 🔥`;
-      const accuracy = totalAttempts > 0 ? Math.round((correctSlices / totalAttempts) * 100) : 0;
-      document.getElementById('final-accuracy').innerText = `${accuracy}%`;
-      document.getElementById('end-modal').style.display = 'flex';
-    }
-
-    function initAndStartGame() {
-      AudioEngine.init();
-      document.getElementById('start-modal').style.display = 'none';
-      initMediaPipe();
-      initGameOrder();
-      spawnFruitWave();
-    }
-
-    function restartGame() {
-      AudioEngine.init();
-      document.getElementById('end-modal').style.display = 'none';
-      initGameOrder();
-      spawnFruitWave();
-    }
-
-    // VẼ NỀN CAMERA TRỰC TIẾP KÈM LỚP MÀU TỐI DOJO
-    function renderBackground(c) {
-      c.save();
-      if (video.readyState >= 2) {
-        // Vẽ video webcam lật gương làm nền mờ phía sau
-        c.save();
-        c.translate(width, 0);
-        c.scale(-1, 1);
-        c.globalAlpha = 0.38; // Mờ 38% để thấy rõ trái cây nổi bật
-        c.drawImage(video, 0, 0, width, height);
-        c.restore();
-
-        // Phủ lớp gradient dojo phong cách ninja huyền bí
-        const tint = c.createLinearGradient(0, 0, 0, height);
-        tint.addColorStop(0, 'rgba(10, 4, 1, 0.72)');
-        tint.addColorStop(0.5, 'rgba(25, 10, 3, 0.65)');
-        tint.addColorStop(1, 'rgba(5, 2, 0, 0.85)');
-        c.fillStyle = tint;
-        c.fillRect(0, 0, width, height);
-      } else {
-        // Nền gỗ truyền thống nếu chưa có camera
-        const bgGradient = c.createRadialGradient(width / 2, height * 0.45, 50, width / 2, height * 0.5, width * 0.85);
-        bgGradient.addColorStop(0, '#2e1407');
-        bgGradient.addColorStop(0.6, '#180a03');
-        bgGradient.addColorStop(1, '#090401');
-        c.fillStyle = bgGradient;
-        c.fillRect(0, 0, width, height);
-      }
-      c.restore();
-    }
-
-    // VẼ LƯỠI ĐAO ÁNH SÁNG NEON VÀ ĐẦU NGÓN TAY AI
-    function drawBladeStreak(c) {
-      // Vệt chém
-      if (bladePoints.length >= 2) {
-        c.save();
-        const now = performance.now();
-
-        for (let i = 1; i < bladePoints.length; i++) {
-          const p1 = bladePoints[i - 1];
-          const p2 = bladePoints[i];
-          const age = now - p2.time;
-          const progress = 1 - Math.min(1, age / 180);
-
-          // Lõi trắng sắc bén
-          c.beginPath();
-          c.moveTo(p1.x, p1.y);
-          c.lineTo(p2.x, p2.y);
-          c.strokeStyle = `rgba(255, 255, 255, ${progress})`;
-          c.lineWidth = progress * 10 + 2;
-          c.lineCap = 'round';
-          c.stroke();
-
-          // Hào quang neon cyan/vàng bọc ngoài
-          c.beginPath();
-          c.moveTo(p1.x, p1.y);
-          c.lineTo(p2.x, p2.y);
-          c.strokeStyle = `rgba(56, 189, 248, ${progress * 0.7})`;
-          c.lineWidth = progress * 24 + 4;
-          c.stroke();
-        }
-        c.restore();
-      }
-
-      // Vòng tròn định vị đầu ngón tay
-      if (handTipPos) {
-        c.save();
-        c.shadowColor = '#38bdf8';
-        c.shadowBlur = 20;
-        c.beginPath();
-        c.arc(handTipPos.x, handTipPos.y, 16, 0, Math.PI * 2);
-        c.fillStyle = '#ffffff';
-        c.fill();
-        c.lineWidth = 4;
-        c.strokeStyle = '#38bdf8';
-        c.stroke();
-
-        c.beginPath();
-        c.arc(handTipPos.x, handTipPos.y, 24, 0, Math.PI * 2);
-        c.strokeStyle = 'rgba(250, 204, 21, 0.7)';
-        c.lineWidth = 2;
-        c.stroke();
-        c.restore();
-      }
-    }
-
-    // VÒNG LẶP RENDER 60FPS
+    // VÒNG LẶP DỰNG HÌNH (GAME LOOP)
     function gameLoop() {
-      ctx.save();
-      if (performance.now() < shakeEndTime) {
-        const ox = (Math.random() - 0.5) * 18;
-        const oy = (Math.random() - 0.5) * 18;
-        ctx.translate(ox, oy);
-      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Vẽ hình ảnh webcam nền
-      renderBackground(ctx);
+      // 1. Cập nhật và vẽ trái cây
+      activeFruits.forEach((fruit) => {
+        if (!fruit.isSliced) {
+          fruit.x += fruit.vx;
+          fruit.y += fruit.vy;
+          fruit.vy += fruit.gravity;
 
-      // Cập nhật nửa quả đã chém
-      for (let i = halfFruits.length - 1; i >= 0; i--) {
-        const half = halfFruits[i];
-        half.update();
-        half.draw(ctx);
-        if (half.alpha <= 0) halfFruits.splice(i, 1);
-      }
+          // Nếu quả rơi xuống đáy màn hình mà chưa hết 15s thì đẩy nảy ngược nhẹ lên lại để học sinh kịp chém
+          if (fruit.y > canvas.height + 80 && isRoundActive) {
+            fruit.y = canvas.height + 50;
+            fruit.vy = -(canvas.height * 0.012 + Math.random() * 1);
+          }
 
-      // Cập nhật 5 trái cây lơ lửng chuyển động chậm
-      for (let i = 0; i < currentWaveFruits.length; i++) {
-        const fruit = currentWaveFruits[i];
-        fruit.update();
-        fruit.draw(ctx);
-      }
+          // Kiểm tra chém va chạm với vệt kiếm
+          checkSliceCollision(fruit);
+          drawFruit(fruit);
+        } else {
+          // Hiệu ứng quả đã chém tách đôi
+          drawSlicedFruit(fruit);
+        }
+      });
 
-      // Cập nhật hạt nước ép
-      for (let i = activeParticles.length - 1; i >= 0; i--) {
-        const p = activeParticles[i];
-        p.update();
-        p.draw(ctx);
-        if (p.alpha <= 0) activeParticles.splice(i, 1);
-      }
+      // 2. Vẽ hiệu ứng nước ép tóe ra
+      updateAndDrawParticles();
 
-      // Xóa điểm đao cũ & vẽ vệt kiếm
-      trimBladePoints();
-      drawBladeStreak(ctx);
-
-      ctx.restore();
-
-      // Kiểm tra chu kỳ rơi của quả
-      checkWaveFallThrough();
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    requestAnimationFrame(gameLoop);
-  </script>
-</body>
-</html>
+      // 3. Vẽ v
