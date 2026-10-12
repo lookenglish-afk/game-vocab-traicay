@@ -107,6 +107,7 @@
       z-index: 10;
       box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
       max-width: 80%;
+      transition: all 0.3s ease;
     }
     .mission-label {
       font-size: 18px;
@@ -125,6 +126,26 @@
       font-size: 22px;
       color: #38bdf8;
       font-style: italic;
+    }
+
+    /* POPUP THÔNG BÁO KẾT QUẢ TỪNG CÂU */
+    #feedback-banner {
+      position: absolute;
+      top: 260px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 36px;
+      font-weight: bold;
+      padding: 10px 30px;
+      border-radius: 16px;
+      z-index: 20;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
     }
 
     /* MODAL BẮT ĐẦU VÀ KẾT THÚC */
@@ -193,10 +214,13 @@
 
   <!-- NHIỆM VỤ TIẾNG VIỆT -->
   <div class="mission-card" id="mission-box">
-    <div class="mission-label">🎯 HÃY QUƠ TAY CHÉM TỪ CÓ NGHĨA LÀ:</div>
+    <div class="mission-label">🎯 HÃY QUƠ TAY CHÉM TỪ CÓ NGHĨA LÀ (CHỈ 1 LƯỢT CHÉM):</div>
     <div class="mission-vn" id="target-vn">Đang tải câu hỏi...</div>
     <div class="mission-ipa" id="target-ipa">...</div>
   </div>
+
+  <!-- BANNER THÔNG BÁO ĐÚNG / SAI -->
+  <div id="feedback-banner"></div>
 
   <!-- POPUP BẮT ĐẦU -->
   <div id="start-modal">
@@ -204,10 +228,9 @@
     <p style="font-size: 26px; max-width: 820px; line-height: 1.6; color: #cbd5e1;">
       🍉 <b>Thử thách trọn bộ 25 từ vựng Sức Khỏe:</b><br>
       👉 Bấm nút bên dưới để bắt đầu.<br>
-      ✨ Khớp ngón tay phát sáng và có tâm radar xoay tròn ở đầu ngón trỏ.<br>
-      ⏱ Trái cây bay bổng và rơi siêu chậm để các bạn quan sát dễ dàng.<br>
-      🏁 Hoàn thành đủ 25 từ sẽ dừng game và tổng kết vinh danh.<br>
-      <i>(Hỗ trợ di chuột và chạm màn hình)</i>
+      ⚠️ <b>Lưu ý quan trọng:</b> Mỗi từ chỉ có <b>1 cơ hội chém duy nhất</b>!<br>
+      Nếu chém trúng quả sai hoặc hết 15s là qua câu tiếp theo ngay.<br>
+      🏁 Hoàn thành đủ 25 từ sẽ dừng game và tổng kết vinh danh!
     </p>
     <button class="btn-action" onclick="startGame()">BẮT ĐẦU CHƠI 🚀</button>
   </div>
@@ -229,6 +252,7 @@
   </div>
 
   <script>
+    // 25 TỪ VỰNG CHUẨN XÁC
     const fullVocabList = [
       { id: 1, word: "healthy living", ipa: "/ˌhelθi ˈlɪvɪŋ/", pos: "n.phr", vn: "lối sống lành mạnh" },
       { id: 2, word: "schoolwork", ipa: "/ˈskuːlwɜːk/", pos: "n", vn: "việc học ở trường" },
@@ -254,625 +278,4 @@
       { id: 22, word: "additional support", ipa: "/əˈdɪʃənl səˈpɔːt/", pos: "n.phr", vn: "sự hỗ trợ thêm" },
       { id: 23, word: "appropriately", ipa: "/əˈprəʊpriətli/", pos: "adv", vn: "một cách phù hợp" },
       { id: 24, word: "mood", ipa: "/muːd/", pos: "n", vn: "tâm trạng" },
-      { id: 25, word: "fattening food", ipa: "/ˈfætnɪŋ fuːd/", pos: "n.phr", vn: "đồ ăn dễ gây béo" }
-    ];
-
-    const fruitStyles = [
-      { fill: "#ef4444", border: "#f87171", icon: "🍉" },
-      { fill: "#f97316", border: "#fb923c", icon: "🍊" },
-      { fill: "#84cc16", border: "#a3e635", icon: "🍏" },
-      { fill: "#eab308", border: "#fde047", icon: "🍍" },
-      { fill: "#a855f7", border: "#c084fc", icon: "🍇" }
-    ];
-
-    const HAND_CONNECTIONS = [
-      [0,1],[1,2],[2,3],[3,4],
-      [0,5],[5,6],[6,7],[7,8],
-      [5,9],[9,10],[10,11],[11,12],
-      [9,13],[13,14],[14,15],[15,16],
-      [13,17],[17,18],[18,19],[19,20],[0,17]
-    ];
-
-    let randomizedVocab = [];
-    let canvas, ctx;
-    let currentIdx = 0;
-    let score = 0;
-    let correctCount = 0;
-    let activeFruits = [];
-    let particles = [];
-    let sparkTrail = [];
-    let bladeTrail = [];
-
-    let handX = -100, handY = -100, isHandActive = false;
-    let rawLandmarks = null;
-    let radarAngle = 0;
-
-    let roundTimer = 15;
-    let timerInterval = null;
-    let isRoundActive = false;
-    let isGameEnded = false;
-
-    function shuffleArray(array) {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
-
-    function startGame() {
-      // Ẩn bảng chờ ngay lập tức
-      document.getElementById('start-modal').style.display = 'none';
-      canvas = document.getElementById('game-canvas');
-      ctx = canvas.getContext('2d');
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-
-      initAudio();
-      setupMouseFallback();
-
-      // Bắt đầu game và vòng lặp render ngay lập tức
-      restartGame();
-      requestAnimationFrame(gameLoop);
-
-      // Chạy luồng camera ngầm (không chặn giao diện)
-      setTimeout(() => {
-        initDirectWebcamWithHands();
-      }, 50);
-    }
-
-    function resizeCanvas() {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-
-    function initDirectWebcamWithHands() {
-      const statusEl = document.getElementById('cam-status');
-      const videoElement = document.getElementById('webcam-bg');
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        statusEl.innerText = "Chuột / Chạm màn hình";
-        return;
-      }
-
-      statusEl.innerText = "Đang kết nối camera...";
-
-      navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: "user" },
-        audio: false
-      })
-      .then((stream) => {
-        videoElement.srcObject = stream;
-        return videoElement.play();
-      })
-      .then(() => {
-        statusEl.innerText = "Camera đã mở. Đang tải AI...";
-
-        if (typeof Hands === "undefined") {
-          statusEl.innerText = "Chuột / Chạm màn hình";
-          return;
-        }
-
-        const hands = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 0,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        hands.onResults((results) => {
-          if (isGameEnded) return;
-
-          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            statusEl.innerText = "🟢 Camera: Đã nhận diện bàn tay";
-            statusEl.style.color = "#4ade80";
-
-            rawLandmarks = results.multiHandLandmarks[0];
-            const tip = rawLandmarks[8];
-
-            const targetX = (1 - tip.x) * canvas.width;
-            const targetY = tip.y * canvas.height;
-
-            handX = targetX;
-            handY = targetY;
-            isHandActive = true;
-
-            bladeTrail.push({ x: targetX, y: targetY, time: performance.now() });
-            createSparks(targetX, targetY);
-          } else {
-            statusEl.innerText = "🟡 Đưa bàn tay lên trước camera";
-            statusEl.style.color = "#facc15";
-            isHandActive = false;
-            rawLandmarks = null;
-          }
-        });
-
-        if (typeof Camera !== "undefined") {
-          const camera = new Camera(videoElement, {
-            onFrame: async () => {
-              await hands.send({ image: videoElement });
-            },
-            width: 640,
-            height: 480
-          });
-          camera.start();
-        }
-      })
-      .catch((err) => {
-        console.warn("Chuyển sang chế độ chuột:", err);
-        statusEl.innerText = "Chuột / Chạm màn hình";
-      });
-    }
-
-    function setupMouseFallback() {
-      const handlePointer = (e) => {
-        if (isGameEnded) return;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        handX = clientX;
-        handY = clientY;
-        isHandActive = true;
-
-        bladeTrail.push({ x: clientX, y: clientY, time: performance.now() });
-        createSparks(clientX, clientY);
-      };
-
-      window.addEventListener('mousemove', handlePointer);
-      window.addEventListener('touchmove', handlePointer, { passive: true });
-    }
-
-    function restartGame() {
-      document.getElementById('end-modal').style.display = 'none';
-      document.getElementById('mission-box').style.display = 'block';
-      isGameEnded = false;
-      randomizedVocab = shuffleArray(fullVocabList);
-      currentIdx = 0;
-      score = 0;
-      correctCount = 0;
-      document.getElementById('hud-score').innerText = `Điểm: 0 ⭐`;
-      startRound();
-    }
-
-    function startRound() {
-      if (currentIdx >= 25) {
-        showEndGame();
-        return;
-      }
-
-      isRoundActive = true;
-      activeFruits = [];
-      const currentVocab = randomizedVocab[currentIdx];
-
-      document.getElementById('hud-progress').innerText = `Từ: ${currentIdx + 1} / 25`;
-      document.getElementById('target-vn').innerText = `"${currentVocab.vn}"`;
-      document.getElementById('target-ipa').innerText = `${currentVocab.pos} • ${currentVocab.ipa}`;
-
-      let wrongPool = fullVocabList.filter(item => item.id !== currentVocab.id);
-      wrongPool = shuffleArray(wrongPool);
-
-      let roundChoices = [
-        { text: currentVocab.word, isCorrect: true },
-        { text: wrongPool[0].word, isCorrect: false },
-        { text: wrongPool[1].word, isCorrect: false },
-        { text: wrongPool[2].word, isCorrect: false },
-        { text: wrongPool[3].word, isCorrect: false }
-      ];
-      roundChoices = shuffleArray(roundChoices);
-
-      const laneCenters = [0.10, 0.28, 0.50, 0.72, 0.90];
-
-      roundChoices.forEach((choice, index) => {
-        const style = fruitStyles[index % fruitStyles.length];
-        const spawnX = canvas.width * laneCenters[index];
-
-        activeFruits.push({
-          x: spawnX,
-          y: canvas.height + 70,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: -(canvas.height * 0.0155 + Math.random() * 1.5),
-          gravity: 0.065,
-          airDrag: 0.993,
-          radius: 60,
-          text: choice.text,
-          isCorrect: choice.isCorrect,
-          color: style.fill,
-          border: style.border,
-          icon: style.icon,
-          isSliced: false,
-          sliceAlpha: 1
-        });
-      });
-
-      clearInterval(timerInterval);
-      roundTimer = 15;
-      const timerBadge = document.getElementById('hud-timer');
-      timerBadge.innerText = `⏱ ${roundTimer}s`;
-      timerBadge.style.background = "rgba(66, 32, 6, 0.95)";
-
-      timerInterval = setInterval(() => {
-        roundTimer--;
-        timerBadge.innerText = `⏱ ${roundTimer}s`;
-
-        if (roundTimer <= 4) {
-          timerBadge.style.background = "rgba(127, 29, 29, 0.95)";
-        }
-
-        if (roundTimer <= 0) {
-          clearInterval(timerInterval);
-          playBuzzSound();
-          nextRound();
-        }
-      }, 1000);
-    }
-
-    function nextRound() {
-      isRoundActive = false;
-      setTimeout(() => {
-        currentIdx++;
-        startRound();
-      }, 1200);
-    }
-
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!isGameEnded) {
-        activeFruits.forEach((fruit) => {
-          if (!fruit.isSliced) {
-            fruit.x += fruit.vx;
-            fruit.y += fruit.vy;
-            fruit.vy += fruit.gravity;
-            fruit.vy *= fruit.airDrag;
-
-            if (fruit.y > canvas.height + 90 && isRoundActive) {
-              fruit.y = canvas.height + 60;
-              fruit.vy = -(canvas.height * 0.0135 + Math.random() * 1.2);
-            }
-
-            checkSliceCollision(fruit);
-            drawFruit(fruit);
-          } else {
-            drawSlicedFruit(fruit);
-          }
-        });
-
-        updateAndDrawParticles();
-        updateAndDrawSparks();
-        drawBladeTrail();
-        drawSciFiHandEffects();
-      }
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    function drawSciFiHandEffects() {
-      if (!isHandActive) return;
-
-      radarAngle += 0.05;
-
-      if (rawLandmarks && rawLandmarks.length > 0) {
-        ctx.save();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
-        ctx.shadowColor = "#38bdf8";
-        ctx.shadowBlur = 12;
-
-        HAND_CONNECTIONS.forEach(([i, j]) => {
-          const pt1 = rawLandmarks[i];
-          const pt2 = rawLandmarks[j];
-          const x1 = (1 - pt1.x) * canvas.width;
-          const y1 = pt1.y * canvas.height;
-          const x2 = (1 - pt2.x) * canvas.width;
-          const y2 = pt2.y * canvas.height;
-
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-        });
-
-        rawLandmarks.forEach((pt, idx) => {
-          const x = (1 - pt.x) * canvas.width;
-          const y = pt.y * canvas.height;
-          ctx.beginPath();
-          ctx.arc(x, y, idx === 8 ? 6 : 3.5, 0, Math.PI * 2);
-          ctx.fillStyle = idx === 8 ? "#ffffff" : "#38bdf8";
-          ctx.fill();
-        });
-        ctx.restore();
-      }
-
-      ctx.save();
-      ctx.translate(handX, handY);
-      ctx.rotate(radarAngle);
-
-      ctx.shadowColor = "#38bdf8";
-      ctx.shadowBlur = 15;
-
-      ctx.beginPath();
-      ctx.arc(0, 0, 24, 0, Math.PI * 1.5);
-      ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(0, 0, 10, 0, Math.PI * 2);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(0, 0, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function createSparks(x, y) {
-      for (let i = 0; i < 3; i++) {
-        sparkTrail.push({
-          x: x + (Math.random() - 0.5) * 15,
-          y: y + (Math.random() - 0.5) * 15,
-          vx: (Math.random() - 0.5) * 3,
-          vy: (Math.random() - 0.5) * 3,
-          radius: Math.random() * 3 + 1.5,
-          alpha: 1,
-          color: Math.random() > 0.5 ? "#38bdf8" : "#ffffff"
-        });
-      }
-    }
-
-    function updateAndDrawSparks() {
-      sparkTrail.forEach((sp, idx) => {
-        sp.x += sp.vx;
-        sp.y += sp.vy;
-        sp.alpha -= 0.04;
-
-        if (sp.alpha <= 0) {
-          sparkTrail.splice(idx, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = sp.alpha;
-          ctx.shadowColor = sp.color;
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
-          ctx.fillStyle = sp.color;
-          ctx.fill();
-          ctx.restore();
-        }
-      });
-    }
-
-    function drawFruit(fruit) {
-      ctx.save();
-      ctx.shadowColor = fruit.color;
-      ctx.shadowBlur = 20;
-
-      ctx.beginPath();
-      ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = fruit.border;
-      ctx.stroke();
-
-      ctx.font = "26px serif";
-      ctx.textAlign = "center";
-      ctx.fillText(fruit.icon, fruit.x, fruit.y - fruit.radius + 20);
-
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 19px 'Times New Roman'";
-      ctx.textAlign = "center";
-      wrapText(ctx, fruit.text, fruit.x, fruit.y + 6, fruit.radius * 1.8, 22);
-
-      ctx.restore();
-    }
-
-    function drawSlicedFruit(fruit) {
-      fruit.sliceAlpha -= 0.02;
-      if (fruit.sliceAlpha <= 0) return;
-
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, fruit.sliceAlpha);
-
-      ctx.beginPath();
-      ctx.arc(fruit.x - 28, fruit.y, fruit.radius * 0.85, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(fruit.x + 28, fruit.y, fruit.radius * 0.85, -Math.PI * 0.5, Math.PI * 0.5);
-      ctx.fillStyle = fruit.color;
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function checkSliceCollision(fruit) {
-      if (!isHandActive || bladeTrail.length < 2) return;
-
-      const p1 = bladeTrail[bladeTrail.length - 1];
-      const p2 = bladeTrail[bladeTrail.length - 2];
-
-      const dist = Math.hypot(p1.x - fruit.x, p1.y - fruit.y);
-      const speed = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-
-      if (dist < fruit.radius + 12 && speed > 4) {
-        fruit.isSliced = true;
-        createSplashParticles(fruit.x, fruit.y, fruit.color);
-
-        if (fruit.isCorrect) {
-          playSlashSound();
-          score += 100;
-          correctCount++;
-          document.getElementById('hud-score').innerText = `Điểm: ${score} ⭐`;
-          clearInterval(timerInterval);
-          nextRound();
-        } else {
-          playBuzzSound();
-        }
-      }
-    }
-
-    function drawBladeTrail() {
-      const now = performance.now();
-      bladeTrail = bladeTrail.filter(pt => now - pt.time < 220);
-
-      if (bladeTrail.length < 2) return;
-
-      ctx.save();
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      for (let i = 1; i < bladeTrail.length; i++) {
-        const pt1 = bladeTrail[i - 1];
-        const pt2 = bladeTrail[i];
-        const age = now - pt2.time;
-        const progress = 1 - (age / 220);
-
-        ctx.beginPath();
-        ctx.moveTo(pt1.x, pt1.y);
-        ctx.lineTo(pt2.x, pt2.y);
-        ctx.strokeStyle = `rgba(56, 189, 248, ${progress * 0.85})`;
-        ctx.lineWidth = 18 * progress;
-        ctx.shadowColor = "#38bdf8";
-        ctx.shadowBlur = 20;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(pt1.x, pt1.y);
-        ctx.lineTo(pt2.x, pt2.y);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${progress})`;
-        ctx.lineWidth = 5 * progress;
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function createSplashParticles(x, y, color) {
-      for (let i = 0; i < 22; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 8 + 3;
-        particles.push({
-          x: x,
-          y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          radius: Math.random() * 5 + 3,
-          color: color,
-          alpha: 1
-        });
-      }
-    }
-
-    function updateAndDrawParticles() {
-      particles.forEach((p, idx) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.2;
-        p.alpha -= 0.035;
-
-        if (p.alpha <= 0) {
-          particles.splice(idx, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = p.alpha;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.fill();
-          ctx.restore();
-        }
-      });
-    }
-
-    function wrapText(context, text, x, y, maxWidth, lineHeight) {
-      const words = text.split(' ');
-      let line = '';
-      let lines = [];
-
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = context.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-          lines.push(line);
-          line = words[n] + ' ';
-        } else {
-          line = testLine;
-        }
-      }
-      lines.push(line);
-
-      const startY = y - ((lines.length - 1) * lineHeight) / 2;
-      for (let k = 0; k < lines.length; k++) {
-        context.fillText(lines[k].trim(), x, startY + (k * lineHeight));
-      }
-    }
-
-    function showEndGame() {
-      isGameEnded = true;
-      clearInterval(timerInterval);
-      activeFruits = [];
-      document.getElementById('mission-box').style.display = 'none';
-      document.getElementById('end-modal').style.display = 'flex';
-
-      document.getElementById('final-score').innerText = `${score} PTS`;
-      document.getElementById('final-correct').innerText = `${correctCount} / 25 từ`;
-
-      let rankTitle = "Ninja Tập Sự 🥋";
-      if (correctCount >= 23) rankTitle = "👑 NINJA HUYỀN THOẠI (Xuất Sắc)";
-      else if (correctCount >= 18) rankTitle = "⚔️ NINJA THƯỢNG ĐẲNG (Giỏi)";
-      else if (correctCount >= 12) rankTitle = "🎯 NINJA TRUNG ĐẲNG (Khá)";
-
-      document.getElementById('final-rank').innerText = rankTitle;
-    }
-
-    let audioCtx = null;
-    function initAudio() {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      } catch (e) {}
-    }
-
-    function playSlashSound() {
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    }
-
-    function playBuzzSound() {
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.25);
-    }
-  </script>
-</body>
-</html>
+      { id: 25, word: "fattening food", ipa: "/ˈfætnɪŋ fuːd/", pos: "n.phr", vn: "
